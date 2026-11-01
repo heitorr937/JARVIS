@@ -22,7 +22,7 @@ class TestActivityParser(unittest.TestCase):
         self.assertIn("Questões identificadas: 2", formatar_estrutura_para_ia(resultado))
 
     def test_numeracao_simples(self):
-        texto = "1. Primeiro enunciado\\nA) Opção A\\nB) Opção B\\n2) Segundo enunciado"
+        texto = "1. Primeiro enunciado\nA) Opção A\nB) Opção B\n2) Segundo enunciado"
         resultado = extrair_estrutura_atividade(texto)
         self.assertEqual(resultado["quantidade"], 2)
         self.assertEqual(resultado["questoes"][0]["alternativas"][1]["letra"], "B")
