@@ -2515,15 +2515,13 @@ def eh_pedido_leitura_pagina(texto):
 
 def eh_pedido_identificar_questoes(texto):
     return bool(re.search(
-        r"\\b(identifique|identificar|organize|organizar|separe|separar|"
-        r"liste|listar|extraia|extrair)\\b.{0,70}\\b(quest[oõ]es|perguntas|"
-        r"enunciados|alternativas|atividade)\\b|"
-        r"\\b(identifique|identificar)\\s+(as\\s+)?quest[oõ]es\\b",
+        r"\b(identifique|identificar|organize|organizar|separe|separar|"
+        r"liste|listar|extraia|extrair)\b.{0,70}\b(quest[oõ]es|perguntas|"
+        r"enunciados|alternativas|atividade)\b|"
+        r"\b(identifique|identificar)\s+(as\s+)?quest[oõ]es\b",
         texto,
         re.IGNORECASE
     ))
-
-
 def identificar_questoes_pagina():
     """Captura e organiza questões; não interage com os controles da página."""
     try:
