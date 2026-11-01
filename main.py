@@ -73,6 +73,7 @@ thread_microfone = None
 microfone_estado_antes_analise = None
 contexto_tela = None
 destinatario_mensagem_pendente = None
+mensagem_envio_pendente = None
 bloqueio_contexto_tela = threading.Lock()
 
 historico = [
@@ -2565,6 +2566,7 @@ def processar_mensagem(pergunta):
 
     global microfone_estado_antes_analise
     global destinatario_mensagem_pendente
+    global mensagem_envio_pendente
 
     pergunta = pergunta.strip()
 
@@ -2587,22 +2589,59 @@ def processar_mensagem(pergunta):
         falar_em_segundo_plano(resposta)
         return
 
+    if mensagem_envio_pendente is not None:
+        if eh_cancelamento_pedido(pergunta):
+            mensagem_envio_pendente = None
+            resposta = "Tudo bem. Cancelei o envio. Nenhuma mensagem foi enviada."
+            adicionar_mensagem("JARVIS", resposta)
+            falar_em_segundo_plano(resposta)
+            return
+
+        if re.fullmatch(
+            r"\\s*(sim|confirmo|pode enviar|envie|enviar|pode|confirmado)"
+            r"[.! ]*\\s*",
+            pergunta,
+            re.IGNORECASE
+        ):
+            pendente = mensagem_envio_pendente
+            mensagem_envio_pendente = None
+            pedido_envio = (
+                "No WhatsApp Web, envie para o contato com o nome exato "
+                f"\\"{pendente['destinatario']}\\" esta mensagem, sem alterar o texto: "
+                f"\\"{pendente['mensagem']}\\"."
+            )
+            iniciar_controle_computador(pedido_envio)
+            return
+
+        resposta = (
+            "Ainda não enviei nada. Para confirmar, diga “sim, pode enviar”; "
+            "para cancelar, diga “não”."
+        )
+        adicionar_mensagem("JARVIS", resposta)
+        falar_em_segundo_plano(resposta)
+        return
+
     if destinatario_mensagem_pendente is not None:
         destinatario = destinatario_mensagem_pendente
         destinatario_mensagem_pendente = None
 
         if eh_cancelamento_pedido(pergunta):
-            resposta = "Tudo bem. Cancelei o envio da mensagem."
+            resposta = "Tudo bem. Cancelei a mensagem."
             adicionar_mensagem("JARVIS", resposta)
             falar_em_segundo_plano(resposta)
             return
 
-        pedido_envio = (
-            "No WhatsApp Web, envie para o contato com o nome exato "
-            f"\"{destinatario}\" esta mensagem, sem alterar o texto: "
-            f"\"{pergunta}\"."
+        mensagem_envio_pendente = {
+            "destinatario": destinatario,
+            "mensagem": pergunta
+        }
+        resposta = (
+            f"Você quer enviar para {destinatario} exatamente esta mensagem?\\n\\n"
+            f"“{pergunta}”\\n\\n"
+            "Diga “sim, pode enviar” para confirmar ou “não” para cancelar."
         )
-        iniciar_controle_computador(pedido_envio)
+        adicionar_mensagem("JARVIS", resposta)
+        falar_em_segundo_plano(resposta)
         return
 
     pedido_mensagem = extrair_pedido_mensagem(pergunta)
@@ -2611,20 +2650,24 @@ def processar_mensagem(pergunta):
         if not conteudo_mensagem:
             destinatario_mensagem_pendente = destinatario
             resposta = (
-                f"Qual mensagem você quer enviar para {destinatario}? "
-                "Diga o texto exato; depois disso, envio sem pedir "
-                "uma segunda confirmação."
+                f"Qual mensagem você quer preparar para {destinatario}? "
+                "Depois mostrarei o texto e pedirei sua confirmação antes de enviar."
             )
             adicionar_mensagem("JARVIS", resposta)
             falar_em_segundo_plano(resposta)
             return
 
-        pedido_envio = (
-            "No WhatsApp Web, envie para o contato com o nome exato "
-            f"\"{destinatario}\" esta mensagem, sem alterar o texto: "
-            f"\"{conteudo_mensagem}\"."
+        mensagem_envio_pendente = {
+            "destinatario": destinatario,
+            "mensagem": conteudo_mensagem
+        }
+        resposta = (
+            f"Você quer enviar para {destinatario} exatamente esta mensagem?\\n\\n"
+            f"“{conteudo_mensagem}”\\n\\n"
+            "Diga “sim, pode enviar” para confirmar ou “não” para cancelar."
         )
-        iniciar_controle_computador(pedido_envio)
+        adicionar_mensagem("JARVIS", resposta)
+        falar_em_segundo_plano(resposta)
         return
 
     with bloqueio_contexto_tela:
