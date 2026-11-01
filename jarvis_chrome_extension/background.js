@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 
 const BASE = "http://127.0.0.1:8765";
 
@@ -76,7 +75,6 @@ chrome.runtime.onMessage.addListener(
 );
 
 console.log("Ponte de comunicação do JARVIS carregada.");
-=======
 
 const BASE = "http://127.0.0.1:8765";
 
@@ -154,4 +152,3 @@ chrome.runtime.onMessage.addListener(
 );
 
 console.log("Ponte de comunicação do JARVIS carregada.");
->>>>>>> origin/main
