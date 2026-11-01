@@ -2607,8 +2607,8 @@ def processar_mensagem(pergunta):
             mensagem_envio_pendente = None
             pedido_envio = (
                 "No WhatsApp Web, envie para o contato com o nome exato "
-                f"\\"{pendente['destinatario']}\\" esta mensagem, sem alterar o texto: "
-                f"\\"{pendente['mensagem']}\\"."
+                '"{}" esta mensagem, sem alterar o texto: '.format(pendente["destinatario"])
+                + '"{}"'.format(pendente["mensagem"]) + "."
             )
             iniciar_controle_computador(pedido_envio)
             return
