@@ -114,6 +114,37 @@
         }) || null;
     }
 
+    function validarCliqueSeguro(elemento) {
+        if (!elemento) {
+            throw new Error("Controle não encontrado.");
+        }
+
+        const tipo = String(elemento.type || "").toLowerCase();
+        const nome = nomeElemento(elemento).toLowerCase();
+        const rotulo = [
+            nome,
+            elemento.getAttribute("aria-label") || "",
+            elemento.getAttribute("title") || "",
+            elemento.getAttribute("name") || ""
+        ].join(" ").toLowerCase();
+
+        const acaoProibida =
+            /\\b(enviar|envie|mandar|manda|send|submit|entregar|finalizar|concluir|submeter|comprar|pagar|excluir|apagar|deletar|confirmar)\\b/i;
+
+        if (tipo === "submit" || elemento.tagName === "INPUT" &&
+            ["submit", "image", "reset"].includes(tipo)) {
+            throw new Error("Bloqueei um controle de envio ou submissão.");
+        }
+
+        if (acaoProibida.test(rotulo)) {
+            throw new Error("Bloqueei um clique que pode enviar, confirmar ou finalizar uma ação.");
+        }
+
+        if (elemento.disabled || elemento.getAttribute("aria-disabled") === "true") {
+            throw new Error("Este controle está desativado.");
+        }
+    }
+
     function clicarTexto(texto, tipo = "any", exato = false) {
         const termo = String(texto || "").trim().toLowerCase();
 
@@ -149,6 +180,7 @@
             throw new Error("Não encontrei o controle: " + texto);
         }
 
+        validarCliqueSeguro(encontrado);
         encontrado.scrollIntoView({ block: "center" });
         encontrado.click();
 
@@ -165,6 +197,28 @@
             !elemento.isContentEditable
         ) {
             throw new Error("O elemento não é um campo de texto.");
+        }
+
+        if (
+            elemento.disabled ||
+            elemento.readOnly ||
+            elemento.getAttribute("aria-disabled") === "true" ||
+            elemento.getAttribute("aria-readonly") === "true"
+        ) {
+            throw new Error("Este campo está bloqueado para edição.");
+        }
+
+        if (
+            elemento.tagName === "INPUT" &&
+            !["text", "search", "email", "url", "tel", "password", ""].includes(
+                String(elemento.type || "").toLowerCase()
+            )
+        ) {
+            throw new Error("Este tipo de campo não pode ser preenchido automaticamente.");
+        }
+
+        if (String(valor ?? "").length > 5000) {
+            throw new Error("O texto ultrapassa o limite permitido.");
         }
 
         elemento.scrollIntoView({ block: "center" });
@@ -235,6 +289,7 @@
                     throw new Error("Controle não encontrado.");
                 }
 
+                validarCliqueSeguro(elemento);
                 elemento.scrollIntoView({ block: "center" });
                 elemento.click();
 
@@ -292,8 +347,8 @@
 
                 const tecla = String(comando.tecla || "").toUpperCase();
 
-                if (!mapa[tecla]) {
-                    throw new Error("Tecla não permitida.");
+                if (!mapa[tecla] || tecla === "ENTER") {
+                    throw new Error("Esta tecla está bloqueada para evitar envios acidentais.");
                 }
 
                 const elemento = document.activeElement || document.body;
