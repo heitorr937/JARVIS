@@ -2526,11 +2526,11 @@ def eh_pedido_identificar_questoes(texto):
 def eh_pedido_ajuda_questoes(texto):
     """Detecta um pedido explícito de explicação/resolução guiada."""
     menciona_questoes = bool(re.search(
-        r"\\b(quest[oõ]es|perguntas|atividade|exerc[ií]cios)\\b",
+        r"\b(quest[oõ]es|perguntas|atividade|exerc[ií]cios)\b",
         texto, re.IGNORECASE
     ))
     pede_ajuda = bool(re.search(
-        r"\\b(ajude|ajudar|explique|explicar|ensine|ensinar|"
+        r"\b(ajude|ajudar|explique|explicar|ensine|ensinar|"
         r"resolva|resolver|corrija|corrigir|respostas|responder)\\b",
         texto, re.IGNORECASE
     ))
