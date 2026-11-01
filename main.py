@@ -25,6 +25,7 @@ import pyperclip
 import pygetwindow as gw
 import knowledge_base
 from browser_navigator import NavegadorJARVIS, ErroNavegadorJARVIS
+from activity_parser import extrair_estrutura_atividade, formatar_estrutura_para_ia
 
 
 # ==========================================
@@ -2511,6 +2512,41 @@ def eh_pedido_leitura_pagina(texto):
     ))
 
 
+
+def eh_pedido_identificar_questoes(texto):
+    return bool(re.search(
+        r"\\b(identifique|identificar|organize|organizar|separe|separar|"
+        r"liste|listar|extraia|extrair)\\b.{0,70}\\b(quest[oõ]es|perguntas|"
+        r"enunciados|alternativas|atividade)\\b|"
+        r"\\b(identifique|identificar)\\s+(as\\s+)?quest[oõ]es\\b",
+        texto,
+        re.IGNORECASE
+    ))
+
+
+def identificar_questoes_pagina():
+    """Captura e organiza questões; não interage com os controles da página."""
+    try:
+        if ERRO_PONTE_DOM:
+            raise ErroNavegadorJARVIS(
+                "A ponte com o Chrome não iniciou: " + ERRO_PONTE_DOM
+            )
+        dados = navegador_dom.ler_pagina()
+        texto_pagina = str(dados.get("texto", "")).strip()
+        if not texto_pagina:
+            raise ErroNavegadorJARVIS(
+                "A página não retornou texto. Ative a extensão JARVIS na aba correta."
+            )
+        estrutura = extrair_estrutura_atividade(dados)
+        resposta = formatar_estrutura_para_ia(estrutura)
+        if not estrutura["quantidade"]:
+            resposta += "\\n\\nNão alterei a página. Você pode pedir uma leitura geral para conferir o conteúdo."
+        fila.put(("sucesso", resposta))
+    except Exception as erro:
+        fila.put(("erro", "Não consegui identificar as questões: " + str(erro)))
+
+
+
 def ler_pagina_e_responder(pergunta):
     try:
         if ERRO_PONTE_DOM:
@@ -2735,6 +2771,16 @@ def processar_mensagem(pergunta):
             daemon=True
         )
         janela.after(700, thread.start)
+        return
+
+    if eh_pedido_identificar_questoes(pergunta):
+        if ERRO_PONTE_DOM:
+            adicionar_mensagem("JARVIS", "A ponte com o Chrome não está disponível: " + ERRO_PONTE_DOM, "erro")
+            return
+        entrada.config(state="disabled")
+        botao_enviar.config(state="disabled")
+        status.config(text="● IDENTIFICANDO QUESTÕES...", fg=AZUL)
+        threading.Thread(target=identificar_questoes_pagina, daemon=True).start()
         return
 
     if eh_pedido_leitura_pagina(pergunta):
