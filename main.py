@@ -2581,7 +2581,7 @@ def identificar_questoes_pagina():
         estrutura = extrair_estrutura_atividade(dados)
         resposta = formatar_estrutura_para_ia(estrutura)
         if not estrutura["quantidade"]:
-            resposta += "\\n\\nNão alterei a página. Você pode pedir uma leitura geral para conferir o conteúdo."
+            resposta += "\n\nNão alterei a página. Você pode pedir uma leitura geral para conferir o conteúdo."
         fila.put(("sucesso", resposta))
     except Exception as erro:
         fila.put(("erro", "Não consegui identificar as questões: " + str(erro)))
