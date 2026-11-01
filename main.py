@@ -2278,14 +2278,30 @@ def preparar_e_analisar_controle_dom(pedido):
         ))
 
     except Exception as erro:
-        # A leitura DOM é preferida. Se não houver extensão ativa, usa o
-        # controle visual que já existia no projeto.
-        if not etapas:
+        # Não encaminhe pedidos de envio para o controle visual.
+        # O modo visual tem permissões mais amplas e poderia contornar
+        # os bloqueios do DOM. Mesmo após a confirmação, se a ponte DOM
+        # falhar, o envio deve parar para evitar uma ação não verificada.
+        pedido_parece_envio = bool(re.search(
+            r"\b(whatsapp|mensagem)\b.*\b(enviar|envie|mandar|manda|send)\b"
+            r"|\b(enviar|envie|mandar|manda|send)\b.*\b(whatsapp|mensagem)\b",
+            pedido,
+            re.IGNORECASE
+        ))
+
+        if not etapas and not pedido_parece_envio:
             try:
                 fila.put(("status_voz", "● DOM INDISPONÍVEL; USANDO MODO VISUAL"))
             except Exception:
                 pass
             preparar_e_analisar_controle_computador(pedido)
+        elif not etapas:
+            fila.put((
+                "tela_erro",
+                "Não enviei a mensagem. A ponte segura do Chrome falhou, "
+                "então bloqueei a troca para o modo visual. "
+                "Abra o WhatsApp no Chrome e tente novamente."
+            ))
         else:
             fila.put((
                 "tela_acao_erro",
