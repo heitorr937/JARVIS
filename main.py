@@ -2598,8 +2598,8 @@ def processar_mensagem(pergunta):
             return
 
         if re.fullmatch(
-            r"\\s*(sim|confirmo|pode enviar|envie|enviar|pode|confirmado)"
-            r"[.! ]*\\s*",
+            r"\s*(sim|confirmo|pode enviar|envie|enviar|pode|confirmado)"
+            r"[.! ]*\s*",
             pergunta,
             re.IGNORECASE
         ):
@@ -2636,8 +2636,8 @@ def processar_mensagem(pergunta):
             "mensagem": pergunta
         }
         resposta = (
-            f"Você quer enviar para {destinatario} exatamente esta mensagem?\\n\\n"
-            f"“{pergunta}”\\n\\n"
+            f"Você quer enviar para {destinatario} exatamente esta mensagem?\n\n"
+            f"“{pergunta}”\n\n"
             "Diga “sim, pode enviar” para confirmar ou “não” para cancelar."
         )
         adicionar_mensagem("JARVIS", resposta)
@@ -2662,8 +2662,8 @@ def processar_mensagem(pergunta):
             "mensagem": conteudo_mensagem
         }
         resposta = (
-            f"Você quer enviar para {destinatario} exatamente esta mensagem?\\n\\n"
-            f"“{conteudo_mensagem}”\\n\\n"
+            f"Você quer enviar para {destinatario} exatamente esta mensagem?\n\n"
+            f"“{conteudo_mensagem}”\n\n"
             "Diga “sim, pode enviar” para confirmar ou “não” para cancelar."
         )
         adicionar_mensagem("JARVIS", resposta)
