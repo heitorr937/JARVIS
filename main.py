@@ -2768,6 +2768,31 @@ def processar_mensagem(pergunta):
             contexto_tela and contexto_tela["resolver_atividade"]
         )
 
+    if eh_pedido_ajuda_questoes(pergunta):
+        if client is None:
+            adicionar_mensagem(
+                "JARVIS",
+                "A chave da API não foi encontrada. Verifique o arquivo .env.",
+                "erro"
+            )
+            return
+        if ERRO_PONTE_DOM:
+            adicionar_mensagem(
+                "JARVIS",
+                "A ponte com o Chrome não está disponível: " + ERRO_PONTE_DOM,
+                "erro"
+            )
+            return
+        entrada.config(state="disabled")
+        botao_enviar.config(state="disabled")
+        status.config(text="● PREPARANDO EXPLICAÇÕES...", fg=AZUL)
+        threading.Thread(
+            target=orientar_questoes_pagina,
+            args=(pergunta,),
+            daemon=True
+        ).start()
+        return
+
     pediu_recaptura = eh_pedido_recaptura_tela(pergunta)
     if (
         eh_pedido_resolver_atividade_geekie(pergunta)
@@ -2812,31 +2837,6 @@ def processar_mensagem(pergunta):
             daemon=True
         )
         janela.after(700, thread.start)
-        return
-
-    if eh_pedido_ajuda_questoes(pergunta):
-        if client is None:
-            adicionar_mensagem(
-                "JARVIS",
-                "A chave da API não foi encontrada. Verifique o arquivo .env.",
-                "erro"
-            )
-            return
-        if ERRO_PONTE_DOM:
-            adicionar_mensagem(
-                "JARVIS",
-                "A ponte com o Chrome não está disponível: " + ERRO_PONTE_DOM,
-                "erro"
-            )
-            return
-        entrada.config(state="disabled")
-        botao_enviar.config(state="disabled")
-        status.config(text="● PREPARANDO EXPLICAÇÕES...", fg=AZUL)
-        threading.Thread(
-            target=orientar_questoes_pagina,
-            args=(pergunta,),
-            daemon=True
-        ).start()
         return
 
     if eh_pedido_identificar_questoes(pergunta):
