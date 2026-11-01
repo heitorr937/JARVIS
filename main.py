@@ -2531,7 +2531,7 @@ def eh_pedido_ajuda_questoes(texto):
     ))
     pede_ajuda = bool(re.search(
         r"\b(ajude|ajudar|explique|explicar|ensine|ensinar|"
-        r"resolva|resolver|corrija|corrigir|respostas|responder)\\b",
+        r"resolva|resolver|corrija|corrigir|respostas|responder)\b",
         texto, re.IGNORECASE
     ))
     return menciona_questoes and pede_ajuda
