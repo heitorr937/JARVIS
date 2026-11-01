@@ -218,3 +218,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Dados locais e banco de conhecimento do JARVIS
+jarvis_knowledge.db
+jarvis_knowledge.db-journal

@@ -25,6 +25,8 @@ import pyperclip
 import pygetwindow as gw
 import knowledge_base
 from browser_navigator import NavegadorJARVIS, ErroNavegadorJARVIS
+from activity_parser import extrair_estrutura_atividade, formatar_estrutura_para_ia
+from activity_tutor import gerar_orientacao_atividade
 
 
 # ==========================================
@@ -2278,14 +2280,30 @@ def preparar_e_analisar_controle_dom(pedido):
         ))
 
     except Exception as erro:
-        # A leitura DOM é preferida. Se não houver extensão ativa, usa o
-        # controle visual que já existia no projeto.
-        if not etapas:
+        # Não encaminhe pedidos de envio para o controle visual.
+        # O modo visual tem permissões mais amplas e poderia contornar
+        # os bloqueios do DOM. Mesmo após a confirmação, se a ponte DOM
+        # falhar, o envio deve parar para evitar uma ação não verificada.
+        pedido_parece_envio = bool(re.search(
+            r"\b(whatsapp|mensagem)\b.*\b(enviar|envie|mandar|manda|send)\b"
+            r"|\b(enviar|envie|mandar|manda|send)\b.*\b(whatsapp|mensagem)\b",
+            pedido,
+            re.IGNORECASE
+        ))
+
+        if not etapas and not pedido_parece_envio:
             try:
                 fila.put(("status_voz", "● DOM INDISPONÍVEL; USANDO MODO VISUAL"))
             except Exception:
                 pass
             preparar_e_analisar_controle_computador(pedido)
+        elif not etapas:
+            fila.put((
+                "tela_erro",
+                "Não enviei a mensagem. A ponte segura do Chrome falhou, "
+                "então bloqueei a troca para o modo visual. "
+                "Abra o WhatsApp no Chrome e tente novamente."
+            ))
         else:
             fila.put((
                 "tela_acao_erro",
@@ -2495,6 +2513,81 @@ def eh_pedido_leitura_pagina(texto):
     ))
 
 
+
+def eh_pedido_identificar_questoes(texto):
+    return bool(re.search(
+        r"\b(identifique|identificar|organize|organizar|separe|separar|"
+        r"liste|listar|extraia|extrair)\b.{0,70}\b(quest[oõ]es|perguntas|"
+        r"enunciados|alternativas|atividade)\b|"
+        r"\b(identifique|identificar)\s+(as\s+)?quest[oõ]es\b",
+        texto,
+        re.IGNORECASE
+    ))
+def eh_pedido_ajuda_questoes(texto):
+    """Detecta um pedido explícito de explicação/resolução guiada."""
+    menciona_questoes = bool(re.search(
+        r"\b(quest[oõ]es|perguntas|atividade|exerc[ií]cios)\b",
+        texto, re.IGNORECASE
+    ))
+    pede_ajuda = bool(re.search(
+        r"\b(ajude|ajudar|explique|explicar|ensine|ensinar|"
+        r"resolva|resolver|corrija|corrigir|respostas|responder)\\b",
+        texto, re.IGNORECASE
+    ))
+    return menciona_questoes and pede_ajuda
+
+
+def orientar_questoes_pagina(pedido):
+    """Lê novamente a atividade e solicita orientação à IA; não executa ações."""
+    try:
+        if client is None:
+            raise RuntimeError("A chave da API não foi encontrada. Verifique o arquivo .env.")
+        if ERRO_PONTE_DOM:
+            raise ErroNavegadorJARVIS(
+                "A ponte com o Chrome não iniciou: " + ERRO_PONTE_DOM
+            )
+        dados = navegador_dom.ler_pagina()
+        if not str(dados.get("texto", "")).strip():
+            raise ErroNavegadorJARVIS(
+                "A página não retornou texto. Ative a extensão JARVIS na aba correta."
+            )
+        estrutura = extrair_estrutura_atividade(dados)
+        if not estrutura.get("quantidade"):
+            raise ValueError(
+                "Não encontrei questões identificáveis nesta página. "
+                "Peça primeiro para identificar as questões ou confira a atividade."
+            )
+        resposta = gerar_orientacao_atividade(
+            client, MODELO, estrutura, pedido
+        )
+        fila.put(("sucesso", resposta))
+    except Exception as erro:
+        fila.put(("erro", "Não consegui preparar a orientação: " + str(erro)))
+
+
+def identificar_questoes_pagina():
+    """Captura e organiza questões; não interage com os controles da página."""
+    try:
+        if ERRO_PONTE_DOM:
+            raise ErroNavegadorJARVIS(
+                "A ponte com o Chrome não iniciou: " + ERRO_PONTE_DOM
+            )
+        dados = navegador_dom.ler_pagina()
+        texto_pagina = str(dados.get("texto", "")).strip()
+        if not texto_pagina:
+            raise ErroNavegadorJARVIS(
+                "A página não retornou texto. Ative a extensão JARVIS na aba correta."
+            )
+        estrutura = extrair_estrutura_atividade(dados)
+        resposta = formatar_estrutura_para_ia(estrutura)
+        if not estrutura["quantidade"]:
+            resposta += "\n\nNão alterei a página. Você pode pedir uma leitura geral para conferir o conteúdo."
+        fila.put(("sucesso", resposta))
+    except Exception as erro:
+        fila.put(("erro", "Não consegui identificar as questões: " + str(erro)))
+
+
+
 def ler_pagina_e_responder(pergunta):
     try:
         if ERRO_PONTE_DOM:
@@ -2675,6 +2768,31 @@ def processar_mensagem(pergunta):
             contexto_tela and contexto_tela["resolver_atividade"]
         )
 
+    if eh_pedido_ajuda_questoes(pergunta):
+        if client is None:
+            adicionar_mensagem(
+                "JARVIS",
+                "A chave da API não foi encontrada. Verifique o arquivo .env.",
+                "erro"
+            )
+            return
+        if ERRO_PONTE_DOM:
+            adicionar_mensagem(
+                "JARVIS",
+                "A ponte com o Chrome não está disponível: " + ERRO_PONTE_DOM,
+                "erro"
+            )
+            return
+        entrada.config(state="disabled")
+        botao_enviar.config(state="disabled")
+        status.config(text="● PREPARANDO EXPLICAÇÕES...", fg=AZUL)
+        threading.Thread(
+            target=orientar_questoes_pagina,
+            args=(pergunta,),
+            daemon=True
+        ).start()
+        return
+
     pediu_recaptura = eh_pedido_recaptura_tela(pergunta)
     if (
         eh_pedido_resolver_atividade_geekie(pergunta)
@@ -2719,6 +2837,16 @@ def processar_mensagem(pergunta):
             daemon=True
         )
         janela.after(700, thread.start)
+        return
+
+    if eh_pedido_identificar_questoes(pergunta):
+        if ERRO_PONTE_DOM:
+            adicionar_mensagem("JARVIS", "A ponte com o Chrome não está disponível: " + ERRO_PONTE_DOM, "erro")
+            return
+        entrada.config(state="disabled")
+        botao_enviar.config(state="disabled")
+        status.config(text="● IDENTIFICANDO QUESTÕES...", fg=AZUL)
+        threading.Thread(target=identificar_questoes_pagina, daemon=True).start()
         return
 
     if eh_pedido_leitura_pagina(pergunta):
