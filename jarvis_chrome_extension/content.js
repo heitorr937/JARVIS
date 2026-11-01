@@ -129,7 +129,7 @@
         ].join(" ").toLowerCase();
 
         const acaoProibida =
-            /\\b(enviar|envie|mandar|manda|send|submit|entregar|finalizar|concluir|submeter|comprar|pagar|excluir|apagar|deletar|confirmar)\\b/i;
+            /\b(enviar|envie|mandar|manda|send|submit|entregar|finalizar|concluir|submeter|comprar|pagar|excluir|apagar|deletar|confirmar)\b/i;
 
         if (tipo === "submit" || elemento.tagName === "INPUT" &&
             ["submit", "image", "reset"].includes(tipo)) {
