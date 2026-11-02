@@ -189,14 +189,31 @@ class NavegadorJARVIS:
 
                 caminho = urlparse(self.path).path
 
-                tamanho = int(
-                    self.headers.get("Content-Length", "0")
-                )
+                try:
+                    tamanho = int(self.headers.get("Content-Length", "0"))
+                except (TypeError, ValueError):
+                    self.responder(400, {
+                        "ok": False,
+                        "erro": "Tamanho de requisição inválido."
+                    })
+                    return
+
+                # A ponte recebe apenas snapshots e comandos pequenos.
+                # Limitar o corpo evita consumo excessivo de memória por
+                # requisições locais ou páginas maliciosas.
+                if tamanho < 0 or tamanho > 2 * 1024 * 1024:
+                    self.responder(413, {
+                        "ok": False,
+                        "erro": "Requisição maior que o limite de 2 MB."
+                    })
+                    return
 
                 try:
                     dados = json.loads(
                         self.rfile.read(tamanho).decode("utf-8") or "{}"
                     )
+                    if not isinstance(dados, dict):
+                        raise ValueError("O JSON precisa ser um objeto.")
                 except Exception:
                     self.responder(400, {
                         "ok": False,
@@ -226,9 +243,19 @@ class NavegadorJARVIS:
                 elif caminho == "/resultado":
                     identificador = dados.get("id")
 
-                    if identificador:
+                    if isinstance(identificador, str) and identificador:
                         with navegador._lock:
-                            navegador._resultados[identificador] = dados
+                            # Só mantém resultados de comandos ainda pendentes.
+                            ids_pendentes = {
+                                item.get("id") for item in navegador._comandos
+                            }
+                            if identificador in ids_pendentes:
+                                navegador._resultados[identificador] = {
+                                    "id": identificador,
+                                    "ok": bool(dados.get("ok")),
+                                    "mensagem": str(dados.get("mensagem", ""))[:1000],
+                                    "erro": str(dados.get("erro", ""))[:1000]
+                                }
 
                     self.responder(200, {"ok": True})
 
