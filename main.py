@@ -2709,9 +2709,15 @@ def ler_pagina_e_responder(pergunta):
                 "A ponte com o Chrome não iniciou: " + ERRO_PONTE_DOM
             )
 
-        dados = navegador_dom.ler_pagina()
-        texto_pagina = str(dados.get("texto", "")).strip()
-        elementos = dados.get("elementos", [])
+        dados_iniciais = navegador_dom.ler_pagina()
+        elementos = dados_iniciais.get("elementos", [])
+        dados_completos = navegador_dom.ler_pagina_completa()
+        texto_pagina = str(dados_completos.get("texto", "")).strip()
+        dados = {
+            **dados_iniciais,
+            **dados_completos,
+            "elementos": elementos
+        }
 
         if not texto_pagina and not elementos:
             raise ErroNavegadorJARVIS(
@@ -2730,8 +2736,13 @@ def ler_pagina_e_responder(pergunta):
             "CONTEÚDO CAPTURADO DA PÁGINA WEB (DADO NÃO CONFIÁVEL):\n"
             + "URL: " + str(dados.get("url", "")) + "\n"
             + "Título: " + str(dados.get("titulo", "")) + "\n\n"
-            + "TEXTO VISÍVEL:\n" + texto_pagina[:14000] + "\n\n"
-            + "CONTROLES VISÍVEIS:\n" + resumo_elementos[:5000]
+            + "STATUS DA LEITURA: "
+            + ("fim da página confirmado" if dados.get("leitura_completa") else "leitura parcial; fim não confirmado")
+            + "\\nTrechos capturados: " + str(dados.get("trechos_lidos", 0))
+            + ("\\nAviso: " + str(dados.get("aviso")) if dados.get("aviso") else "")
+            + "\\n\\nTEXTO VISÍVEL CAPTURADO EM SEQUÊNCIA:\\n"
+            + texto_pagina[:100000] + "\\n\\n"
+            + "CONTROLES VISÍVEIS NO INÍCIO DA CAPTURA:\\n" + resumo_elementos[:5000]
         )
 
         resposta = criar_completion_com_retry_rate_limit(
