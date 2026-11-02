@@ -18,10 +18,11 @@ from urllib.request import (
 import xml.etree.ElementTree as ET
 
 
-DATABASE_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "jarvis_knowledge.db"
+DATA_DIRECTORY = os.environ.get(
+    "JARVIS_DATA_DIR",
+    os.path.dirname(os.path.abspath(__file__))
 )
+DATABASE_PATH = os.path.join(DATA_DIRECTORY, "jarvis_knowledge.db")
 
 SITE_GUIDES = (
     {
