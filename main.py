@@ -2381,39 +2381,17 @@ def preparar_e_analisar_controle_dom(pedido):
         ))
 
     except Exception as erro:
-        # Não encaminhe pedidos de envio para o controle visual.
-        # O modo visual tem permissões mais amplas e poderia contornar
-        # os bloqueios do DOM. Mesmo após a confirmação, se a ponte DOM
-        # falhar, o envio deve parar para evitar uma ação não verificada.
-        pedido_parece_envio = bool(re.search(
-            r"\b(whatsapp|mensagem)\b.*\b(enviar|envie|mandar|manda|send)\b"
-            r"|\b(enviar|envie|mandar|manda|send)\b.*\b(whatsapp|mensagem)\b",
-            pedido,
-            re.IGNORECASE
+        # Não faça fallback automático para o controle visual: ele usa
+        # coordenadas da tela e não possui as mesmas garantias de validação
+        # dos elementos DOM. Uma falha da extensão deve interromper a ação.
+        fila.put((
+            "tela_erro",
+            "Interrompi a ação porque a navegação segura do Chrome falhou. "
+            "Não executei a ação por outro método. "
+            "Confira se a extensão JARVIS está ativa na aba correta e tente "
+            "novamente. Detalhes: " + str(erro)
         ))
 
-        if not etapas and not pedido_parece_envio:
-            try:
-                fila.put(("status_voz", "● DOM INDISPONÍVEL; USANDO MODO VISUAL"))
-            except Exception:
-                pass
-            preparar_e_analisar_controle_computador(pedido)
-        elif not etapas:
-            fila.put((
-                "tela_erro",
-                "Não enviei a mensagem. A ponte segura do Chrome falhou, "
-                "então bloqueei a troca para o modo visual. "
-                "Abra o WhatsApp no Chrome e tente novamente."
-            ))
-        else:
-            fila.put((
-                "tela_acao_erro",
-                (
-                    "Interação pela página do Chrome.",
-                    str(erro),
-                    len(etapas)
-                )
-            ))
 
 def iniciar_controle_computador(pedido):
 
