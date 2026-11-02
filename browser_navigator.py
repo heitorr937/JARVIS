@@ -162,11 +162,11 @@ class NavegadorJARVIS:
                             if float(item.get("_expira_em", 0)) > agora
                         ]
                         comando = None
-                        if navegador._comandos:
-                            primeiro = navegador._comandos[0]
-                            destino = primeiro.get("_aba_id")
+                        for indice, pendente in enumerate(navegador._comandos):
+                            destino = pendente.get("_aba_id")
                             if destino is None or str(destino) == str(aba_id):
-                                comando = navegador._comandos.pop(0)
+                                comando = navegador._comandos.pop(indice)
+                                break
 
                     self.responder(200, {
                         "ok": True,
