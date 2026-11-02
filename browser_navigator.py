@@ -104,6 +104,13 @@ class NavegadorJARVIS:
                 self.end_headers()
 
             def do_GET(self):
+                if not self.origem_permitida():
+                    self.responder(403, {
+                        "ok": False,
+                        "erro": "Origem não autorizada."
+                    })
+                    return
+
                 caminho = urlparse(self.path).path
 
                 if caminho == "/health":
