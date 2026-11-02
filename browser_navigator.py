@@ -564,7 +564,7 @@ class NavegadorJARVIS:
         return {
             "titulo": titulo,
             "url": url_inicial,
-            "texto": "\\n\\n".join(partes)[:limite_caracteres],
+            "texto": "\n\n".join(partes)[:limite_caracteres],
             "trechos_lidos": trechos,
             "leitura_completa": completa,
             "aviso": aviso
