@@ -24,7 +24,6 @@ import pygame
 import pyautogui
 import pyperclip
 import pygetwindow as gw
-import knowledge_base
 from browser_navigator import NavegadorJARVIS, ErroNavegadorJARVIS
 from activity_parser import extrair_estrutura_atividade, formatar_estrutura_para_ia
 from activity_tutor import gerar_orientacao_atividade
@@ -41,6 +40,10 @@ PASTA = (
 )
 load_dotenv(os.path.join(PASTA, ".env"))
 os.environ.setdefault("JARVIS_DATA_DIR", PASTA)
+
+# Importa a base somente depois de definir o diretório persistente.
+# Isso evita que o SQLite seja criado dentro da pasta temporária do PyInstaller.
+import knowledge_base
 
 knowledge_base.initialize_database()
 
