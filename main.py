@@ -799,6 +799,50 @@ def criar_completion_com_retry_itpm(criar_completion, **argumentos):
     raise RuntimeError("Não consegui concluir a análise da imagem.")
 
 
+def criar_completion_visao_com_fallback(criar_completion, **argumentos):
+    """Tenta JSON Schema estrito e usa JSON mode apenas se o provedor rejeitar o schema."""
+    try:
+        return criar_completion_com_retry_itpm(
+            criar_completion,
+            **argumentos
+        )
+    except Exception as erro:
+        detalhe = str(erro)
+        status_http = getattr(erro, "status_code", None)
+        rejeicao_schema = (
+            status_http == 400
+            and re.search(
+                r"json_validate_failed|invalid.*json.?schema|"
+                r"failed_generation|response_format",
+                detalhe,
+                re.IGNORECASE
+            )
+        )
+        if not rejeicao_schema:
+            raise
+
+        argumentos_fallback = dict(argumentos)
+        argumentos_fallback["response_format"] = {"type": "json_object"}
+        mensagens = argumentos_fallback.get("messages", [])
+        if mensagens and mensagens[0].get("role") == "system":
+            mensagens = list(mensagens)
+            mensagens[0] = dict(mensagens[0])
+            mensagens[0]["content"] = (
+                mensagens[0].get("content", "")
+                + "\\n\\nFORMATO OBRIGATÓRIO: responda somente com um "
+                "objeto JSON válido, sem Markdown ou texto fora do JSON. "
+                "Inclua exatamente as chaves answer, question_type e actions. "
+                "Cada ação deve conter todos os campos do formato solicitado; "
+                "use null nos campos que não se aplicarem."
+            )
+            argumentos_fallback["messages"] = mensagens
+
+        return criar_completion_com_retry_itpm(
+            criar_completion,
+            **argumentos_fallback
+        )
+
+
 # ==========================================
 # ANALISAR E CONTROLAR A TELA SOB COMANDO
 # ==========================================
@@ -1671,7 +1715,7 @@ def analisar_tela(
         with bloqueio_contexto_tela:
             mensagens_contexto = list(contexto["messages"])
 
-        resposta = criar_completion_com_retry_itpm(
+        resposta = criar_completion_visao_com_fallback(
             client.chat.completions.create,
             model=MODELO_VISAO,
             messages=[
