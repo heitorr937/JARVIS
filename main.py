@@ -2638,12 +2638,20 @@ def orientar_questoes_pagina(pedido):
             raise ErroNavegadorJARVIS(
                 "A ponte com o Chrome não iniciou: " + ERRO_PONTE_DOM
             )
-        dados = navegador_dom.ler_pagina()
+        dados = navegador_dom.ler_pagina_completa()
         if not str(dados.get("texto", "")).strip():
             raise ErroNavegadorJARVIS(
                 "A página não retornou texto. Ative a extensão JARVIS na aba correta."
             )
         estrutura = extrair_estrutura_atividade(dados)
+        if not dados.get("leitura_completa"):
+            aviso_leitura = (
+                "A leitura da página foi parcial; o fim não foi confirmado. "
+                + str(dados.get("aviso") or "")
+            ).strip()
+            estrutura["aviso"] = (
+                (estrutura.get("aviso", "") + " " + aviso_leitura).strip()
+            )
         if not estrutura.get("quantidade"):
             raise ValueError(
                 "Não encontrei questões identificáveis nesta página. "
@@ -2664,13 +2672,21 @@ def identificar_questoes_pagina():
             raise ErroNavegadorJARVIS(
                 "A ponte com o Chrome não iniciou: " + ERRO_PONTE_DOM
             )
-        dados = navegador_dom.ler_pagina()
+        dados = navegador_dom.ler_pagina_completa()
         texto_pagina = str(dados.get("texto", "")).strip()
         if not texto_pagina:
             raise ErroNavegadorJARVIS(
                 "A página não retornou texto. Ative a extensão JARVIS na aba correta."
             )
         estrutura = extrair_estrutura_atividade(dados)
+        if not dados.get("leitura_completa"):
+            aviso_leitura = (
+                "A leitura da página foi parcial; o fim não foi confirmado. "
+                + str(dados.get("aviso") or "")
+            ).strip()
+            estrutura["aviso"] = (
+                (estrutura.get("aviso", "") + " " + aviso_leitura).strip()
+            )
         resposta = formatar_estrutura_para_ia(estrutura)
         if not estrutura["quantidade"]:
             resposta += "\n\nNão alterei a página. Você pode pedir uma leitura geral para conferir o conteúdo."
