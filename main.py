@@ -39,6 +39,8 @@ PASTA = (
     if getattr(sys, "frozen", False)
     else os.path.dirname(os.path.abspath(__file__))
 )
+load_dotenv(os.path.join(PASTA, ".env"))
+
 knowledge_base.initialize_database()
 
 # Ponte DOM com a extensão do Chrome. A extensão precisa estar ativada
@@ -50,7 +52,6 @@ try:
 except Exception as erro:
     ERRO_PONTE_DOM = str(erro)
 
-load_dotenv(os.path.join(PASTA, ".env"))
 
 API_KEY = os.getenv("GROQ_API_KEY")
 MODELO = "openai/gpt-oss-20b"
