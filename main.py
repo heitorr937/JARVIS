@@ -799,6 +799,44 @@ def criar_completion_com_retry_itpm(criar_completion, **argumentos):
     raise RuntimeError("Não consegui concluir a análise da imagem.")
 
 
+def criar_completion_com_retry_rate_limit(criar_completion, **argumentos):
+    """Repete chamadas após limites temporários 429, respeitando o tempo informado."""
+    tentativas = 3
+    for tentativa in range(tentativas):
+        try:
+            return criar_completion(**argumentos)
+        except Exception as erro:
+            detalhe = str(erro)
+            status_http = getattr(erro, "status_code", None)
+            eh_rate_limit = (
+                status_http == 429
+                or re.search(r"\\b429\\b", detalhe)
+                or re.search(r"rate_limit_exceeded", detalhe, re.IGNORECASE)
+            )
+            if not eh_rate_limit or tentativa + 1 >= tentativas:
+                raise
+
+            espera = re.search(
+                r"try again in\\s+([\\d.]+)\\s*(ms|s)",
+                detalhe,
+                re.IGNORECASE
+            )
+            if espera:
+                segundos = float(espera.group(1))
+                if espera.group(2).lower() == "ms":
+                    segundos /= 1000
+            else:
+                espera_header = getattr(erro, "retry_after", None)
+                try:
+                    segundos = float(espera_header) if espera_header else 1.0
+                except (TypeError, ValueError):
+                    segundos = 1.0
+
+            time.sleep(min(max(segundos + 0.2, 0.3), 15.0))
+
+    raise RuntimeError("O limite temporário da API impediu a resposta.")
+
+
 def criar_completion_visao_com_fallback(criar_completion, **argumentos):
     """Tenta JSON Schema estrito e usa JSON mode apenas se o provedor rejeitar o schema."""
     try:
@@ -2677,7 +2715,8 @@ def ler_pagina_e_responder(pergunta):
             + "CONTROLES VISÍVEIS:\n" + resumo_elementos[:5000]
         )
 
-        resposta = client.chat.completions.create(
+        resposta = criar_completion_com_retry_rate_limit(
+            client.chat.completions.create,
             model=MODELO,
             messages=[
                 {
