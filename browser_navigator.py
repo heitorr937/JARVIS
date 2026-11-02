@@ -81,9 +81,17 @@ class NavegadorJARVIS:
                 self.wfile.write(corpo)
 
             def origem_permitida(self):
-                # Python local não envia Origin. No navegador, aceitar somente
-                # chamadas provenientes de uma extensão Chrome.
+                # Bloqueia páginas web comuns e tentativas simples de DNS rebinding.
+                # O cliente Python local não envia Origin.
                 origem = self.headers.get("Origin")
+                host = self.headers.get("Host", "")
+                host_permitido = {
+                    f"{navegador.host}:{navegador.porta}",
+                    f"127.0.0.1:{navegador.porta}",
+                    f"localhost:{navegador.porta}"
+                }
+                if host not in host_permitido:
+                    return False
                 return origem is None or origem.startswith("chrome-extension://")
 
             def do_OPTIONS(self):
