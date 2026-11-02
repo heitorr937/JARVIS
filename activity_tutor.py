@@ -1,5 +1,37 @@
 """Tutoria de atividades: explica e orienta sem interagir com a página."""
 import json
+import re
+import time
+
+
+def _completion_com_retry_rate_limit(criar_completion, **argumentos):
+    """Tenta novamente quando a Groq informa um limite 429 temporário."""
+    for tentativa in range(3):
+        try:
+            return criar_completion(**argumentos)
+        except Exception as erro:
+            detalhe = str(erro)
+            status_http = getattr(erro, "status_code", None)
+            eh_rate_limit = (
+                status_http == 429
+                or re.search(r"\\b429\\b", detalhe)
+                or re.search(r"rate_limit_exceeded", detalhe, re.IGNORECASE)
+            )
+            if not eh_rate_limit or tentativa == 2:
+                raise
+
+            espera = re.search(
+                r"try again in\\s+([\\d.]+)\\s*(ms|s)",
+                detalhe,
+                re.IGNORECASE
+            )
+            if espera:
+                segundos = float(espera.group(1))
+                if espera.group(2).lower() == "ms":
+                    segundos /= 1000
+            else:
+                segundos = 1.0
+            time.sleep(min(max(segundos + 0.2, 0.3), 15.0))
 
 
 def gerar_orientacao_atividade(client, modelo, estrutura, pedido):
@@ -44,7 +76,8 @@ def gerar_orientacao_atividade(client, modelo, estrutura, pedido):
             )
         }
     ]
-    resposta = client.chat.completions.create(
+    resposta = _completion_com_retry_rate_limit(
+        client.chat.completions.create,
         model=modelo,
         messages=mensagens,
         temperature=0.2,
