@@ -72,21 +72,36 @@ class NavegadorJARVIS:
                     "Content-Type",
                     "application/json; charset=utf-8"
                 )
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.send_header(
-                    "Access-Control-Allow-Methods",
-                    "GET, POST, OPTIONS"
-                )
-                self.send_header(
-                    "Access-Control-Allow-Headers",
-                    "Content-Type"
-                )
+                origem = self.headers.get("Origin")
+                if origem and origem.startswith("chrome-extension://"):
+                    self.send_header("Access-Control-Allow-Origin", origem)
+                    self.send_header("Vary", "Origin")
                 self.send_header("Content-Length", str(len(corpo)))
                 self.end_headers()
                 self.wfile.write(corpo)
 
+            def origem_permitida(self):
+                # Python local não envia Origin. No navegador, aceitar somente
+                # chamadas provenientes de uma extensão Chrome.
+                origem = self.headers.get("Origin")
+                return origem is None or origem.startswith("chrome-extension://")
+
             def do_OPTIONS(self):
-                self.responder(200, {"ok": True})
+                if not self.origem_permitida():
+                    self.responder(403, {
+                        "ok": False,
+                        "erro": "Origem não autorizada."
+                    })
+                    return
+
+                self.send_response(204)
+                origem = self.headers.get("Origin")
+                if origem:
+                    self.send_header("Access-Control-Allow-Origin", origem)
+                    self.send_header("Vary", "Origin")
+                self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+                self.send_header("Access-Control-Allow-Headers", "Content-Type")
+                self.end_headers()
 
             def do_GET(self):
                 caminho = urlparse(self.path).path
@@ -135,6 +150,13 @@ class NavegadorJARVIS:
                     })
 
             def do_POST(self):
+                if not self.origem_permitida():
+                    self.responder(403, {
+                        "ok": False,
+                        "erro": "Origem não autorizada."
+                    })
+                    return
+
                 caminho = urlparse(self.path).path
 
                 tamanho = int(
