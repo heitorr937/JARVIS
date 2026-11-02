@@ -2740,7 +2740,7 @@ def ler_pagina_e_responder(pergunta):
             + ("fim da página confirmado" if dados.get("leitura_completa") else "leitura parcial; fim não confirmado")
             + "\nTrechos capturados: " + str(dados.get("trechos_lidos", 0))
             + ("\nAviso: " + str(dados.get("aviso")) if dados.get("aviso") else "")
-            + "\n\\nTEXTO VISÍVEL CAPTURADO EM SEQUÊNCIA:\n"
+            + "\n\nTEXTO VISÍVEL CAPTURADO EM SEQUÊNCIA:\n"
             + texto_pagina[:100000] + "\n\n"
             + "CONTROLES VISÍVEIS NO INÍCIO DA CAPTURA:\n" + resumo_elementos[:5000]
         )
