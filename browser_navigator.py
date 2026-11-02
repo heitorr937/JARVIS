@@ -155,6 +155,12 @@ class NavegadorJARVIS:
                     parametros = parse_qs(urlparse(self.path).query)
                     aba_id = parametros.get("tab_id", [None])[0]
                     with navegador._lock:
+                        # Descarta comandos vencidos antes de entregá-los ao Chrome.
+                        agora = time.time()
+                        navegador._comandos = [
+                            item for item in navegador._comandos
+                            if float(item.get("_expira_em", 0)) > agora
+                        ]
                         comando = None
                         if navegador._comandos:
                             primeiro = navegador._comandos[0]
@@ -337,7 +343,8 @@ class NavegadorJARVIS:
 
         comando = {
             "id": identificador,
-            **acao
+            **acao,
+            "_expira_em": time.time() + max(1, float(timeout))
         }
 
         with self._lock:
@@ -377,9 +384,19 @@ class NavegadorJARVIS:
 
             time.sleep(0.15)
 
+        # Remove o comando pendente para que ele não seja executado
+        # inesperadamente caso a aba volte a responder mais tarde.
+        with self._lock:
+            self._comandos = [
+                item for item in self._comandos
+                if item.get("id") != identificador
+            ]
+            self._resultados.pop(identificador, None)
+
         raise ErroNavegadorJARVIS(
-            "A extensão não respondeu. "
-            "Confirme se ela está ativada na aba atual."
+            "A extensão não respondeu a tempo. O comando pendente foi "
+            "cancelado para evitar execução atrasada. Confirme se a aba "
+            "continua ativa e tente novamente."
         )
 
     def estado_extensao(self):
