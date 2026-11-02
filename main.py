@@ -69,7 +69,8 @@ SITES_CONHECIDOS = {
     "tiktok": ("TikTok", "https://www.tiktok.com/"),
     "youtube": ("YouTube", "https://www.youtube.com/"),
     "instagram": ("Instagram", "https://www.instagram.com/"),
-    "discord": ("Discord", "https://discord.com/app")
+    "discord": ("Discord", "https://discord.com/app"),
+    "google": ("Google", "https://www.google.com/")
 }
 
 fila = queue.Queue()
@@ -623,7 +624,7 @@ def eh_pedido_controle_computador(texto):
         r"assinale|assinalar|escolha|escolher|digite|digitar|"
         r"escreva|escrever|cole|colar|pressione|apertar|envie|"
         r"envia|enviar|manda|mande|mandar|toque|tocar|reproduza|"
-        r"reproduzir|pause|pausar|pesquise|pesquisar|busque|buscar|"
+        r"reproduzir|pause|pausar|pesquise|pesquisar|pesquisa|busque|buscar|busca|procure|procurar|"
         r"role|rolar|desça|descer|suba|subir|volte|voltar|"
         r"entre|entrar)\b",
         texto,
@@ -652,14 +653,14 @@ def eh_pedido_controle_computador(texto):
         r"assinale|assinalar|escolha|escolher|"
         r"clique|clicar|pressione|apertar|digite|digitar|escreva|escrever|"
         r"cole|colar|envie|envia|enviar|manda|mande|mandar|toque|tocar|reproduza|"
-        r"reproduzir|pause|pausar|continue|continuar|pesquise|pesquisar|"
-        r"buscar|busque|play|scroll|back|entre|entrar|abra|abrir|"
+        r"reproduzir|pause|pausar|continue|continuar|pesquise|pesquisar|pesquisa|"
+        r"buscar|busque|busca|procure|procurar|play|scroll|back|entre|entrar|abra|abrir|"
         r"abre|acesse|acessar|visite|visitar)\b",
         texto,
         re.IGNORECASE
     ))
     destino = bool(re.search(
-        r"\b(whatsapp|spotify|tiktok|instagram|discord|youtube|"
+        r"\b(whatsapp|spotify|tiktok|instagram|discord|youtube|google|"
         r"chrome|navegador|site|página|pagina|aba|tela|aplicativo|app|"
         r"mensagem|música|musica|vídeo|video|opção|opcao|alternativa|"
         r"contato|conversa|botão|botao|link|menu|campo|atividade|"
@@ -2266,10 +2267,17 @@ def preparar_e_analisar_controle_dom(pedido):
                     {
                         "indice": e.get("indice"),
                         "tag": e.get("tag"),
+                        "role": e.get("role", ""),
                         "tipo": e.get("tipo"),
+                        "desabilitado": e.get("desabilitado", False),
+                        "obrigatorio": e.get("obrigatorio", False),
                         "nome": e.get("nome"),
                         "valor": e.get("valor"),
-                        "href": e.get("href")
+                        "href": e.get("href"),
+                        "opcoes": e.get("opcoes", []),
+                        "marcado": e.get("marcado"),
+                        "indice_selecionado": e.get("indice_selecionado"),
+                        "tem_valor": e.get("tem_valor")
                     }
                     for e in elementos[:100]
                 ]
@@ -2284,11 +2292,19 @@ def preparar_e_analisar_controle_dom(pedido):
                 "\"indice\":0,\"resposta\":\"...\"}; ou "
                 "{\"acao\":\"preencher\",\"indice\":0,"
                 "\"valor\":\"...\",\"resposta\":\"...\"}; ou "
+                "{\"acao\":\"selecionar\",\"indice\":0,"
+                "\"opcao\":\"texto da opção ou valor\",\"resposta\":\"...\"}; ou "
                 "{\"acao\":\"rolar\",\"direcao\":\"baixo\","
                 "\"pixels\":600,\"resposta\":\"...\"}; ou "
                 "{\"acao\":\"abrir_url\",\"url\":\"https://...\","
                 "\"resposta\":\"...\"}; ou "
+                "{\"acao\":\"pesquisar\",\"termo\":\"...\",\"resposta\":\"...\"}; ou "
                 "{\"acao\":\"concluido\",\"resposta\":\"...\"}. "
+                "Se o usuário pedir uma busca e ainda não estiver no Google, abra https://www.google.com/ primeiro. "
+                "Quando estiver no Google, use a ação pesquisar e informe o termo completo. "
+                "Nunca escolha controles marcados como desabilitados. Use marcado, indice_selecionado e tem_valor para verificar o estado; não clique novamente em uma caixa já marcada. "
+                "Para listas suspensas, use selecionar e escolha somente uma opção capturada na página. "
+                "Não tente clicar em botões de envio para fazer pesquisas. "
                 "Use apenas índices que existam na lista de elementos. Não invente "
                 "controles. Nunca clique em enviar, entregar, finalizar, concluir "
                 "atividade, comprar, pagar, excluir, apagar, confirmar pagamento "
@@ -2331,10 +2347,10 @@ def preparar_e_analisar_controle_dom(pedido):
                 fila.put(("controle_concluido", (mensagem, len(etapas), "")))
                 return
 
-            if tipo not in ("clicar", "preencher", "rolar", "abrir_url"):
+            if tipo not in ("clicar", "preencher", "selecionar", "rolar", "abrir_url", "pesquisar"):
                 raise RuntimeError("O planejador solicitou uma ação desconhecida.")
 
-            if tipo in ("clicar", "preencher"):
+            if tipo in ("clicar", "preencher", "selecionar"):
                 indice = plano.get("indice")
                 if not isinstance(indice, int) or not any(
                     e.get("indice") == indice for e in elementos
@@ -2374,11 +2390,72 @@ def preparar_e_analisar_controle_dom(pedido):
                 if not isinstance(valor, str) or len(valor) > 5000:
                     raise RuntimeError("O texto para preencher é inválido.")
 
+            if tipo == "selecionar":
+                opcao = str(plano.get("opcao", "")).strip()
+                opcoes_disponiveis = elemento.get("opcoes", [])
+                if not opcao or len(opcao) > 200:
+                    raise RuntimeError("A opção solicitada é inválida.")
+                if not any(
+                    not item.get("desabilitada")
+                    and (
+                        str(item.get("valor", "")) == opcao
+                        or str(item.get("texto", "")).strip().lower() == opcao.lower()
+                    )
+                    for item in opcoes_disponiveis
+                ):
+                    raise RuntimeError("A opção não existe na lista capturada.")
+                plano["opcao"] = opcao
+
             if tipo == "abrir_url":
                 url = validar_url_site(str(plano.get("url", "")))
                 plano["url"] = url
 
+            if tipo == "pesquisar":
+                host_atual = (urlsplit(str(contexto.get("url", ""))).hostname or "").lower()
+                dominios_google = {
+                    "google.com", "www.google.com",
+                    "google.com.br", "www.google.com.br"
+                }
+
+                if host_atual not in dominios_google:
+                    # Se o planejador escolher pesquisar antes de chegar ao
+                    # Google, corrige a sequência sem pedir um novo comando.
+                    plano = {
+                        "acao": "abrir_url",
+                        "url": "https://www.google.com/",
+                        "resposta": "Abrindo o Google para realizar a pesquisa."
+                    }
+                    tipo = "abrir_url"
+                else:
+                    termo = str(plano.get("termo", "")).strip()
+                    if not termo or len(termo) > 300:
+                        raise RuntimeError("O termo de pesquisa é inválido.")
+                    plano["termo"] = termo
+
             resultado = navegador_dom.executar_acao(plano)
+
+            if tipo in ("abrir_url", "pesquisar"):
+                url_anterior = str(contexto.get("url", ""))
+                prazo_navegacao = time.time() + 15
+                pagina_nova_confirmada = False
+
+                while time.time() < prazo_navegacao:
+                    time.sleep(0.35)
+                    atual = navegador_dom.ler_pagina()
+                    if (
+                        str(atual.get("url", "")) != url_anterior
+                        and (atual.get("texto") or atual.get("elementos"))
+                    ):
+                        pagina_nova_confirmada = True
+                        break
+
+                if not pagina_nova_confirmada:
+                    raise RuntimeError(
+                        "Solicitei a navegação, mas não consegui confirmar "
+                        "que a nova página carregou. Não vou repetir a ação "
+                        "automaticamente para evitar abrir páginas em duplicidade."
+                    )
+
             etapas.append(
                 resposta or str(resultado) or f"Ação {tipo} executada"
             )
@@ -3001,12 +3078,15 @@ def processar_mensagem(pergunta):
         ).start()
         return
 
-    if eh_pedido_pesquisa_web(pergunta):
-        iniciar_pesquisa_web(pergunta)
-        return
-
+    # Pedidos explícitos para interagir com um site têm prioridade sobre
+    # a pesquisa web informativa. Assim, "abra o Google e pesquise..." usa
+    # o navegador real em vez de iniciar uma pesquisa separada pela API.
     if eh_pedido_controle_computador(pergunta):
         iniciar_controle_computador(pergunta)
+        return
+
+    if eh_pedido_pesquisa_web(pergunta):
+        iniciar_pesquisa_web(pergunta)
         return
 
     # COMANDO LOCAL: ABRIR GEEKIE / ATIVIDADES

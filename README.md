@@ -42,6 +42,27 @@ Carregue a pasta `jarvis_chrome_extension` em `chrome://extensions` usando **Mod
 
 O ID é público, mas a comparação exata impede que qualquer extensão Chrome seja aceita automaticamente. Não publique seu arquivo `.env`.
 
+## Navegação web inteligente
+
+A versão de desenvolvimento da navegação usa a extensão Chrome e a ponte local do Python para ler o conteúdo visível da aba ativa e interagir com controles reais da página.
+
+Ações disponíveis nesta etapa:
+
+- Abrir endereços web e navegar entre páginas.
+- Pesquisar pelo Google a partir de pedidos em linguagem natural.
+- Clicar em links, botões, caixas de seleção, opções e controles acessíveis.
+- Preencher campos de texto, pesquisa, e-mail, telefone, número, data e horário.
+- Selecionar opções em listas suspensas.
+- Rolar páginas e reler o conteúdo após cada ação para decidir o próximo passo.
+
+A extensão não transmite o conteúdo digitado nos campos para a ponte; ela informa apenas se um campo tem conteúdo, se uma caixa está marcada e qual opção está selecionada. Senhas e códigos de autenticação não são preenchidos. Botões de envio/finalização e a tecla Enter permanecem bloqueados nesta etapa.
+
+Teste inicial sugerido depois de instalar esta branch:
+
+`JARVIS, abra o Google e pesquise os melhores mods de Minecraft 1.20.1.`
+
+O JARVIS deve abrir o Google, pesquisar, ler os resultados visíveis e apresentar um resumo. Esta branch ainda precisa de validação integrada no Chrome antes de ser considerada estável.
+
 ## Segurança
 
 - Nunca envie `.env`, chaves de API, tokens ou dados de login ao GitHub.

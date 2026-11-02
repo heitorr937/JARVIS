@@ -21,8 +21,10 @@
 
     function elementosVisiveis() {
         const seletores = [
-            "a", "button", "input", "textarea", "select",
-            '[role="button"]', '[role="link"]'
+            "a", "button", "input", "textarea", "select", "label",
+            '[role="button"]', '[role="link"]', '[role="checkbox"]',
+            '[role="radio"]', '[role="option"]', '[role="combobox"]',
+            '[role="menuitem"]', '[role="tab"]'
         ];
 
         return [...document.querySelectorAll(seletores.join(","))]
@@ -38,9 +40,21 @@
     }
 
     function nomeElemento(e) {
+        const rotuloAssociado = e.labels
+            ? [...e.labels].map(label => label.innerText || label.textContent || "").join(" ")
+            : "";
+        const idsRotulo = String(e.getAttribute("aria-labelledby") || "")
+            .split(/\s+/)
+            .filter(Boolean);
+        const rotuloReferenciado = idsRotulo
+            .map(id => document.getElementById(id)?.innerText || "")
+            .join(" ");
+
         return (
             e.innerText ||
             e.getAttribute("aria-label") ||
+            rotuloReferenciado ||
+            rotuloAssociado ||
             e.getAttribute("placeholder") ||
             e.getAttribute("name") ||
             e.title ||
@@ -99,12 +113,32 @@
                     indice,
                     id: e.dataset.jv,
                     tag: e.tagName.toLowerCase(),
+                    role: e.getAttribute("role") || "",
                     nome: nomeElemento(e),
                     tipo: e.type || "",
+                    desabilitado: Boolean(e.disabled || e.getAttribute("aria-disabled") === "true"),
+                    obrigatorio: Boolean(e.required),
                     href: e.href || "",
                     // Nunca transmitir valores digitados ou selecionados:
                     // podem conter senhas, dados pessoais ou informações financeiras.
                     valor: "",
+                    opcoes: e.tagName === "SELECT"
+                        ? [...e.options].slice(0, 40).map((opcao, indice) => ({
+                            indice,
+                            texto: (opcao.textContent || "").trim().slice(0, 120),
+                            valor: String(opcao.value || "").slice(0, 120),
+                            desabilitada: Boolean(opcao.disabled)
+                        }))
+                        : [],
+                    marcado: ["checkbox", "radio"].includes(String(e.type || "").toLowerCase())
+                        ? Boolean(e.checked)
+                        : null,
+                    indice_selecionado: e.tagName === "SELECT" ? e.selectedIndex : null,
+                    tem_valor: e.type === "password"
+                        ? null
+                        : (["INPUT", "TEXTAREA"].includes(e.tagName)
+                            ? Boolean(e.value)
+                            : (e.isContentEditable ? Boolean(e.textContent) : null)),
                     seletor: "jv:" + e.dataset.jv
                 };
             });
@@ -228,7 +262,15 @@
             throw new Error("Bloqueei um clique que pode enviar, confirmar ou finalizar uma ação.");
         }
 
-        if (elemento.disabled || elemento.getAttribute("aria-disabled") === "true") {
+        const controleAssociado = elemento.tagName === "LABEL"
+            ? (elemento.control || document.getElementById(elemento.htmlFor))
+            : null;
+
+        if (
+            elemento.disabled ||
+            elemento.getAttribute("aria-disabled") === "true" ||
+            controleAssociado?.disabled
+        ) {
             throw new Error("Este controle está desativado.");
         }
     }
@@ -275,6 +317,46 @@
         return "Clique executado em: " + nomeElemento(encontrado);
     }
 
+    function selecionarOpcao(elemento, opcaoSolicitada) {
+        if (!elemento || elemento.tagName !== "SELECT") {
+            throw new Error("O controle indicado não é uma lista de seleção.");
+        }
+        if (elemento.disabled || elemento.getAttribute("aria-disabled") === "true") {
+            throw new Error("Esta lista está desativada.");
+        }
+
+        const termo = String(opcaoSolicitada || "").trim();
+        if (!termo || termo.length > 200) {
+            throw new Error("A opção solicitada é inválida.");
+        }
+
+        const opcoes = [...elemento.options];
+        const encontrada = opcoes.find(opcao =>
+            !opcao.disabled &&
+            (
+                String(opcao.value) === termo ||
+                (opcao.textContent || "").trim().toLowerCase() === termo.toLowerCase()
+            )
+        );
+
+        if (!encontrada) {
+            throw new Error("Não encontrei essa opção na lista.");
+        }
+
+        const setter = Object.getOwnPropertyDescriptor(
+            HTMLSelectElement.prototype,
+            "value"
+        )?.set;
+        if (setter) {
+            setter.call(elemento, encontrada.value);
+        } else {
+            elemento.value = encontrada.value;
+        }
+        elemento.dispatchEvent(new Event("input", { bubbles: true }));
+        elemento.dispatchEvent(new Event("change", { bubbles: true }));
+        return "Opção selecionada: " + (encontrada.textContent || encontrada.value).trim();
+    }
+
     function preencherElemento(elemento, valor) {
         if (!elemento) {
             throw new Error("Campo não encontrado.");
@@ -296,23 +378,55 @@
             throw new Error("Este campo está bloqueado para edição.");
         }
 
+        const tipoInput = String(elemento.type || "").toLowerCase();
+        const tiposPermitidos = [
+            "text", "search", "email", "url", "tel", "",
+            "number", "date", "time", "month", "week"
+        ];
+        const metadadosCampo = [
+            elemento.id,
+            elemento.name,
+            elemento.getAttribute("placeholder"),
+            elemento.getAttribute("aria-label"),
+            elemento.getAttribute("autocomplete")
+        ].filter(Boolean).join(" ").toLowerCase();
+        const pareceAutenticacao = /password|passwd|senha|one.?time.?code|otp|verification.?code|verificacao|autenticacao|auth.?code|security.?code|(^|\W)pin(\W|$)|c[oó]digo.{0,20}(autentic|verific|seguran|acesso)|(autentic|verific|seguran|acesso).{0,20}c[oó]digo/i.test(metadadosCampo);
+
         if (
-            elemento.tagName === "INPUT" &&
-            !["text", "search", "email", "url", "tel", ""].includes(
-                String(elemento.type || "").toLowerCase()
+            pareceAutenticacao ||
+            (
+                elemento.tagName === "INPUT" &&
+                !tiposPermitidos.includes(tipoInput)
             )
         ) {
-            throw new Error("Este tipo de campo não pode ser preenchido automaticamente. Senhas e códigos de autenticação nunca são preenchidos pelo JARVIS.");
+            throw new Error("Este campo parece conter senha ou código de autenticação e não será preenchido pelo JARVIS.");
         }
 
-        if (String(valor ?? "").length > 5000) {
+        const textoInformado = String(valor ?? "");
+        if (tipoInput === "number" && textoInformado.trim() !== "" && !Number.isFinite(Number(textoInformado))) {
+            throw new Error("O valor numérico informado é inválido.");
+        }
+        if (tipoInput === "date" && textoInformado && !/^\d{4}-\d{2}-\d{2}$/.test(textoInformado)) {
+            throw new Error("A data precisa estar no formato AAAA-MM-DD.");
+        }
+        if (tipoInput === "time" && textoInformado && !/^\d{2}:\d{2}(?::\d{2})?$/.test(textoInformado)) {
+            throw new Error("O horário precisa estar no formato HH:MM.");
+        }
+        if (tipoInput === "month" && textoInformado && !/^\d{4}-\d{2}$/.test(textoInformado)) {
+            throw new Error("O mês precisa estar no formato AAAA-MM.");
+        }
+        if (tipoInput === "week" && textoInformado && !/^\d{4}-W\d{2}$/.test(textoInformado)) {
+            throw new Error("A semana precisa estar no formato AAAA-Www.");
+        }
+
+        if (textoInformado.length > 5000) {
             throw new Error("O texto ultrapassa o limite permitido.");
         }
 
         elemento.scrollIntoView({ block: "center" });
         elemento.focus();
 
-        const texto = String(valor ?? "");
+        const texto = textoInformado;
 
         if (elemento.isContentEditable) {
             elemento.textContent = texto;
@@ -354,10 +468,39 @@
                     throw new Error("Endereço inválido.");
                 }
 
-                location.assign(url);
+                return {
+                    mensagem: "Solicitei a abertura do endereço.",
+                    navegarDepois: url
+                };
 
                 return {
                     mensagem: "Solicitei a abertura do endereço."
+                };
+            }
+
+            case "pesquisar": {
+                const termo = String(comando.termo || "").trim();
+                const host = location.hostname.toLowerCase();
+
+                if (!termo || termo.length > 300) {
+                    throw new Error("O termo de pesquisa é inválido.");
+                }
+
+                // A pesquisa automática só é permitida no Google.
+                const buscadores = [
+                    "google.com", "www.google.com", "google.com.br",
+                    "www.google.com.br"
+                ];
+                if (!buscadores.includes(host)) {
+                    throw new Error("Por segurança, a pesquisa automática está liberada apenas no Google.");
+                }
+
+                const destino = new URL("/search", location.origin);
+                destino.searchParams.set("q", termo);
+
+                return {
+                    mensagem: "Pesquisa preparada no Google: " + termo,
+                    navegarDepois: destino.href
                 };
             }
 
@@ -403,6 +546,13 @@
 
                 return {
                     mensagem: "Clique executado em " + nomeElemento(elemento)
+                };
+            }
+
+            case "selecionar": {
+                const elemento = localizarPorIdentificador(comando.identificador);
+                return {
+                    mensagem: selecionarOpcao(elemento, comando.opcao)
                 };
             }
 
@@ -544,6 +694,7 @@
                     }
 
                     let resultado;
+                    let retorno = null;
 
                     try {
                         // O Python pode ter expirado o comando depois de
@@ -554,7 +705,7 @@
                             throw new Error("Comando expirado; não executei a ação.");
                         }
 
-                        const retorno = await executarAcao(comando);
+                        retorno = await executarAcao(comando);
 
                         resultado = {
                             id: comando.id,
@@ -570,6 +721,13 @@
                     }
 
                     await enviarResultado(resultado);
+
+                    // Confirma a ação à ponte antes de trocar de página.
+                    if (resultado.ok && retorno?.navegarDepois) {
+                        const destino = retorno.navegarDepois;
+                        await esperar(250);
+                        location.assign(destino);
+                    }
                     await esperar(200);
 
                 } catch (erro) {

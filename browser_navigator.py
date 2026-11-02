@@ -716,6 +716,25 @@ class NavegadorJARVIS:
                 str(acao.get("valor", ""))
             )
 
+        if tipo == "selecionar":
+            opcao = str(acao.get("opcao", "")).strip()
+            if not opcao or len(opcao) > 200:
+                raise ErroNavegadorJARVIS("Opção de seleção inválida.")
+            return self._enviar_comando({
+                "acao": "selecionar",
+                "identificador": str(acao.get("identificador", "")),
+                "opcao": opcao
+            })
+
+        if tipo == "pesquisar":
+            termo = str(acao.get("termo", "")).strip()
+            if not termo or len(termo) > 300:
+                raise ErroNavegadorJARVIS("Termo de pesquisa inválido.")
+            return self._enviar_comando({
+                "acao": "pesquisar",
+                "termo": termo
+            })
+
         if tipo == "rolar":
             return self.rolar(
                 str(acao.get("direcao", "baixo")),
