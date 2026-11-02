@@ -111,16 +111,24 @@ chrome.runtime.onMessage.addListener((mensagem, remetente, responder) => {
                     break;
                 }
                 case "JARVIS_SNAPSHOT": {
-                    resultado = await requisicao("/snapshot", mensagem.dados);
+                    const dadosSnapshot = {
+                        ...(mensagem.dados || {}),
+                        _jarvis_tab_id: remetente?.tab?.id ?? null
+                    };
+                    resultado = await requisicao("/snapshot", dadosSnapshot);
                     const estado = await chrome.storage.local.get(CHAVE_ATIVO);
                     if (estado[CHAVE_ATIVO] === true) {
                         await informarEstadoAoPython(true, remetente?.tab || null);
                     }
                     break;
                 }
-                case "JARVIS_PROXIMO":
-                    resultado = await requisicao("/next");
+                case "JARVIS_PROXIMO": {
+                    const tabId = remetente?.tab?.id;
+                    resultado = await requisicao(
+                        "/next" + (tabId == null ? "" : "?tab_id=" + encodeURIComponent(tabId))
+                    );
                     break;
+                }
                 case "JARVIS_RESULTADO":
                     resultado = await requisicao("/resultado", mensagem.dados);
                     break;
