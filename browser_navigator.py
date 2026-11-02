@@ -322,8 +322,7 @@ class NavegadorJARVIS:
 
         with self._lock:
             self._resultados.pop(identificador, None)
-            with self._lock:
-                snapshot = self._snapshot or {}
+            snapshot = self._snapshot or {}
             aba_id = snapshot.get("_jarvis_tab_id")
             comando["_aba_id"] = aba_id
             self._comandos.append(comando)
