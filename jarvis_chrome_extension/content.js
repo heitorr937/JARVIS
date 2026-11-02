@@ -438,6 +438,14 @@
                     let resultado;
 
                     try {
+                        // O Python pode ter expirado o comando depois de
+                        // entregá-lo ao content script, mas antes da execução.
+                        // Revalidar aqui evita executar ações antigas.
+                        const expiracao = Number(comando._expira_em || 0);
+                        if (!Number.isFinite(expiracao) || expiracao <= Date.now() / 1000) {
+                            throw new Error("Comando expirado; não executei a ação.");
+                        }
+
                         const retorno = await executarAcao(comando);
 
                         resultado = {
