@@ -101,10 +101,10 @@
                 }
             );
             while (walker.nextNode()) {
-                const trecho = walker.currentNode.nodeValue.replace(/\\s+/g, " ").trim();
+                const trecho = walker.currentNode.nodeValue.replace(/\s+/g, " ").trim();
                 if (trecho) linhas.push(trecho);
             }
-            return linhas.join("\\n").slice(0, 16000);
+            return linhas.join("\n").slice(0, 16000);
         })();
 
         return {
