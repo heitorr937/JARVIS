@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 import uuid
@@ -73,7 +74,7 @@ class NavegadorJARVIS:
                     "application/json; charset=utf-8"
                 )
                 origem = self.headers.get("Origin")
-                if origem and origem.startswith("chrome-extension://"):
+                if origem and self.origem_permitida():
                     self.send_header("Access-Control-Allow-Origin", origem)
                     self.send_header("Vary", "Origin")
                 self.send_header("Content-Length", str(len(corpo)))
@@ -92,7 +93,11 @@ class NavegadorJARVIS:
                 }
                 if host not in host_permitido:
                     return False
-                return origem is None or origem.startswith("chrome-extension://")
+                if origem is None:
+                    return True
+                extensao_id = os.getenv("JARVIS_EXTENSION_ID", "").strip()
+                origem_esperada = "chrome-extension://" + extensao_id if extensao_id else ""
+                return bool(origem_esperada and origem == origem_esperada)
 
             def do_OPTIONS(self):
                 if not self.origem_permitida():
