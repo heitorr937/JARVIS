@@ -14,14 +14,14 @@ def _completion_com_retry_rate_limit(criar_completion, **argumentos):
             status_http = getattr(erro, "status_code", None)
             eh_rate_limit = (
                 status_http == 429
-                or re.search(r"\\b429\\b", detalhe)
+                or re.search(r"\b429\b", detalhe)
                 or re.search(r"rate_limit_exceeded", detalhe, re.IGNORECASE)
             )
             if not eh_rate_limit or tentativa == 2:
                 raise
 
             espera = re.search(
-                r"try again in\\s+([\\d.]+)\\s*(ms|s)",
+                r"try again in\s+([\d.]+)\s*(ms|s)",
                 detalhe,
                 re.IGNORECASE
             )
