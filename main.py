@@ -172,7 +172,16 @@ status = tk.Label(
     bg=FUNDO
 )
 
-status.pack(anchor="w", padx=28, pady=(0, 10))
+status.pack(anchor="w", padx=28, pady=(0, 3))
+
+status_navegador = tk.Label(
+    janela,
+    text="● CHROME: aguardando extensão",
+    font=("Segoe UI", 8),
+    fg=CINZA,
+    bg=FUNDO
+)
+status_navegador.pack(anchor="w", padx=28, pady=(0, 8))
 
 
 # ==========================================
@@ -3621,6 +3630,14 @@ def verificar_fila():
                     fg=VERDE
                 )
 
+            elif tipo == "estado_extensao":
+
+                texto_estado, cor_estado = conteudo
+                status_navegador.config(
+                    text=texto_estado,
+                    fg=cor_estado
+                )
+
             elif tipo == "erro_microfone":
 
                 botao_microfone.config(
@@ -3657,6 +3674,39 @@ def verificar_fila():
         pass
 
     janela.after(100, verificar_fila)
+
+
+# ==========================================
+# SINCRONIZAÇÃO DO ESTADO DA EXTENSÃO
+# ==========================================
+
+def consultar_estado_extensao():
+    try:
+        estado = navegador_dom.estado_extensao()
+        if estado.get("conectada") and estado.get("ativo"):
+            aba = estado.get("aba") or {}
+            titulo_aba = str(aba.get("titulo") or "aba ativa")[:45]
+            texto_estado = f"● CHROME: JARVIS ATIVO — {titulo_aba}"
+            cor_estado = VERDE
+        elif estado.get("conectada"):
+            texto_estado = "● CHROME: extensão conectada, mas desativada"
+            cor_estado = CINZA
+        else:
+            texto_estado = "● CHROME: extensão sem comunicação recente"
+            cor_estado = VERMELHO
+    except Exception:
+        texto_estado = "● CHROME: ponte Python indisponível"
+        cor_estado = VERMELHO
+
+    fila.put(("estado_extensao", (texto_estado, cor_estado)))
+
+
+def atualizar_estado_extensao():
+    threading.Thread(
+        target=consultar_estado_extensao,
+        daemon=True
+    ).start()
+    janela.after(3000, atualizar_estado_extensao)
 
 
 # ==========================================
@@ -3828,6 +3878,7 @@ janela.protocol(
 entrada.focus()
 
 janela.after(100, verificar_fila)
+janela.after(500, atualizar_estado_extensao)
 
 iniciar_escuta()
 
