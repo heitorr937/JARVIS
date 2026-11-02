@@ -2241,7 +2241,7 @@ def preparar_e_analisar_controle_computador(
 
 def compactar_contexto_dom(dados, limite_elementos=40, limite_texto=6500):
     """Reduz o contexto enviado ao modelo sem perder os controles mais úteis."""
-    texto = re.sub(r"\\n{3,}", "\\n\\n", str(dados.get("texto", ""))).strip()
+    texto = re.sub(r"\n{3,}", "\n\n", str(dados.get("texto", ""))).strip()
     texto = texto[:limite_texto]
 
     elementos = dados.get("elementos", [])
