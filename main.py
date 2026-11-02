@@ -829,7 +829,7 @@ def criar_completion_visao_com_fallback(criar_completion, **argumentos):
             mensagens[0] = dict(mensagens[0])
             mensagens[0]["content"] = (
                 mensagens[0].get("content", "")
-                + "\\n\\nFORMATO OBRIGATÓRIO: responda somente com um "
+                + "\n\nFORMATO OBRIGATÓRIO: responda somente com um "
                 "objeto JSON válido, sem Markdown ou texto fora do JSON. "
                 "Inclua exatamente as chaves answer, question_type e actions. "
                 "Cada ação deve conter todos os campos do formato solicitado; "
