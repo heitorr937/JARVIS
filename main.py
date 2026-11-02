@@ -2239,7 +2239,7 @@ def preparar_e_analisar_controle_computador(
 
 
 
-def compactar_contexto_dom(dados, limite_elementos=40, limite_texto=6500):
+def compactar_contexto_dom(dados, limite_elementos=15, limite_texto=2400):
     """Reduz o contexto enviado ao modelo sem perder os controles mais úteis."""
     texto = re.sub(r"\n{3,}", "\n\n", str(dados.get("texto", ""))).strip()
     texto = texto[:limite_texto]
@@ -2286,19 +2286,19 @@ def compactar_contexto_dom(dados, limite_elementos=40, limite_texto=6500):
     for elemento in selecionados:
         item = {chave: elemento.get(chave) for chave in campos if chave in elemento}
         if isinstance(item.get("nome"), str):
-            item["nome"] = item["nome"][:120]
+            item["nome"] = item["nome"][:90]
         if isinstance(item.get("href"), str):
-            item["href"] = item["href"][:240]
+            item["href"] = item["href"][:160]
         opcoes = item.get("opcoes")
         if isinstance(opcoes, list):
             item["opcoes"] = [
                 {
                     "indice": opcao.get("indice"),
-                    "texto": str(opcao.get("texto", ""))[:80],
-                    "valor": str(opcao.get("valor", ""))[:80],
+                    "texto": str(opcao.get("texto", ""))[:50],
+                    "valor": str(opcao.get("valor", ""))[:50],
                     "desabilitada": bool(opcao.get("desabilitada", False))
                 }
-                for opcao in opcoes[:10]
+                for opcao in opcoes[:6]
                 if isinstance(opcao, dict)
             ]
         elementos_compactados.append(item)
@@ -2312,11 +2312,11 @@ def compactar_contexto_dom(dados, limite_elementos=40, limite_texto=6500):
 
     # Orçamento defensivo de caracteres: mantém o prompt bem abaixo do
     # limite de tokens por minuto mesmo em páginas com muitos controles.
-    while len(json.dumps(contexto, ensure_ascii=False)) > 14000:
-        if len(contexto["elementos"]) > 18:
-            contexto["elementos"] = contexto["elementos"][:-5]
-        elif len(contexto["texto"]) > 2200:
-            contexto["texto"] = contexto["texto"][:max(2200, len(contexto["texto"]) - 1200)]
+    while len(json.dumps(contexto, ensure_ascii=False)) > 7500:
+        if len(contexto["elementos"]) > 8:
+            contexto["elementos"] = contexto["elementos"][:-3]
+        elif len(contexto["texto"]) > 1200:
+            contexto["texto"] = contexto["texto"][:max(1200, len(contexto["texto"]) - 800)]
         else:
             break
 
@@ -2376,7 +2376,8 @@ def preparar_e_analisar_controle_dom(pedido):
                 "Se não souber qual controle usar, pare e explique."
             )
 
-            retorno = client.chat.completions.create(
+            retorno = criar_completion_com_retry_rate_limit(
+                client.chat.completions.create,
                 model=MODELO,
                 messages=[
                     {"role": "system", "content": instrucao},
@@ -2390,7 +2391,7 @@ def preparar_e_analisar_controle_dom(pedido):
                     }
                 ],
                 temperature=0.1,
-                max_completion_tokens=500
+                max_completion_tokens=250
             ).choices[0].message.content
 
             if not retorno:
