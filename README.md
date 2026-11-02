@@ -4,9 +4,9 @@
 
 1. Para iniciar pelo código, instale Python 3.11 ou superior no Windows e habilite o launcher `py`. Para gerar o executável com `build_windows.ps1`, instale especificamente Python 3.11 (64 bits), por compatibilidade mais previsível com o PyAudio.
 2. Copie `.env.example` para `.env` e preencha `GROQ_API_KEY`.
-3. Para iniciar a versão Python, execute `INICIAR_JARVIS.bat`.
+3. Para iniciar a versão Python, siga o procedimento em [`INICIAR_MANUALMENTE.md`](INICIAR_MANUALMENTE.md), que usa comandos digitados no PowerShell e não exige executar o arquivo `.bat` baixado.
 
-O inicializador cria `.venv` e instala as dependências listadas em `requirements.txt`. Na primeira execução, essa etapa pode demorar e exige conexão com a internet.
+O procedimento cria `.venv` e instala as dependências listadas em `requirements.txt`. Na primeira execução, essa etapa pode demorar e exige conexão com a internet. Em computadores com o Controle Inteligente de Aplicativos ativo, scripts baixados como `.bat` e `.ps1` podem ser bloqueados; não desative essa proteção para iniciar o projeto.
 
 ## Criar o executável Windows
 
@@ -17,7 +17,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\build_windows.ps1
 ```
 
-O processo gera o ícone em `assets\jarvis.ico` e o aplicativo em `dist\JARVIS\JARVIS.exe`. A distribuição é no formato `onedir`: mantenha a pasta inteira `dist\JARVIS`, não apenas o EXE. O arquivo `.env` é copiado para essa pasta; mantenha-o privado.
+O processo gera o ícone em `assets\jarvis.ico` e o aplicativo em `dist\JARVIS\JARVIS.exe`. A distribuição é no formato `onedir`: mantenha a pasta inteira `dist\JARVIS`, não apenas o EXE. O arquivo `.env` é copiado para essa pasta; mantenha-o privado. **Atenção:** o executável ainda não possui assinatura digital confiável e pode ser bloqueado pelo Controle Inteligente de Aplicativos. Não desative essa proteção para executá-lo; a distribuição assinada ainda não está implementada.
 
 ## Criar atalho na área de trabalho
 
