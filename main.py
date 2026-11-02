@@ -2738,11 +2738,11 @@ def ler_pagina_e_responder(pergunta):
             + "Título: " + str(dados.get("titulo", "")) + "\n\n"
             + "STATUS DA LEITURA: "
             + ("fim da página confirmado" if dados.get("leitura_completa") else "leitura parcial; fim não confirmado")
-            + "\\nTrechos capturados: " + str(dados.get("trechos_lidos", 0))
-            + ("\\nAviso: " + str(dados.get("aviso")) if dados.get("aviso") else "")
-            + "\\n\\nTEXTO VISÍVEL CAPTURADO EM SEQUÊNCIA:\\n"
-            + texto_pagina[:100000] + "\\n\\n"
-            + "CONTROLES VISÍVEIS NO INÍCIO DA CAPTURA:\\n" + resumo_elementos[:5000]
+            + "\nTrechos capturados: " + str(dados.get("trechos_lidos", 0))
+            + ("\nAviso: " + str(dados.get("aviso")) if dados.get("aviso") else "")
+            + "\n\\nTEXTO VISÍVEL CAPTURADO EM SEQUÊNCIA:\n"
+            + texto_pagina[:100000] + "\n\n"
+            + "CONTROLES VISÍVEIS NO INÍCIO DA CAPTURA:\n" + resumo_elementos[:5000]
         )
 
         resposta = criar_completion_com_retry_rate_limit(
