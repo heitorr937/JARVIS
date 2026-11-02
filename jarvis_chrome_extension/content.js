@@ -386,6 +386,26 @@
                 };
             }
 
+            case "clicar_identificador": {
+                const elemento = localizarPorIdentificador(
+                    comando.identificador
+                );
+
+                if (!elemento || !elemento.isConnected) {
+                    throw new Error(
+                        "O controle mudou desde a leitura. Atualize a página antes de tentar novamente."
+                    );
+                }
+
+                validarCliqueSeguro(elemento);
+                elemento.scrollIntoView({ block: "center" });
+                elemento.click();
+
+                return {
+                    mensagem: "Clique executado em " + nomeElemento(elemento)
+                };
+            }
+
             case "preencher": {
                 const elemento = localizarPorIdentificador(
                     comando.identificador
