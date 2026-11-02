@@ -3,6 +3,7 @@ from tkinter import scrolledtext
 from groq import Groq
 from dotenv import load_dotenv
 import os
+import sys
 import base64
 import io
 import threading
@@ -33,7 +34,11 @@ from activity_tutor import gerar_orientacao_atividade
 # CONFIGURAÇÕES
 # ==========================================
 
-PASTA = os.path.dirname(os.path.abspath(__file__))
+PASTA = (
+    os.path.dirname(sys.executable)
+    if getattr(sys, "frozen", False)
+    else os.path.dirname(os.path.abspath(__file__))
+)
 knowledge_base.initialize_database()
 
 # Ponte DOM com a extensão do Chrome. A extensão precisa estar ativada
