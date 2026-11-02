@@ -24,6 +24,14 @@ if (-not (Test-Path ".env")) {
 & $Python -m PyInstaller --noconfirm --clean --windowed --onedir --name JARVIS --icon "assets\jarvis.ico" --add-data ".env.example;." --collect-all pygame --collect-all edge_tts --hidden-import=pygetwindow --hidden-import=pyautogui --hidden-import=speech_recognition main.py
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller não conseguiu criar o executável." }
 
+$Destino = Join-Path $PSScriptRoot "dist\JARVIS"
+if (Test-Path ".env") {
+    Copy-Item ".env" (Join-Path $Destino ".env") -Force
+} else {
+    Copy-Item ".env.example" (Join-Path $Destino ".env") -Force
+    Write-Host "Configure GROQ_API_KEY em dist\JARVIS\.env antes de iniciar." -ForegroundColor Yellow
+}
+
 Write-Host ""
 Write-Host "Build concluído: dist\JARVIS\JARVIS.exe" -ForegroundColor Green
-Write-Host "Mantenha o arquivo .env ao lado do executável (dist\JARVIS) com GROQ_API_KEY configurada." -ForegroundColor Yellow
+Write-Host "Configuração local copiada. Nunca compartilhe o arquivo .env." -ForegroundColor Yellow
