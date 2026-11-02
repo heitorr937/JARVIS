@@ -413,6 +413,15 @@
 
         try {
             while (ativo) {
+                // Todas as abas podem ter o content script, mas somente a aba
+                // visível deve alimentar a ponte compartilhada e consumir comandos.
+                // Isso evita que uma aba em segundo plano "roube" a ação destinada
+                // à página que o usuário está realmente utilizando.
+                if (document.visibilityState !== "visible") {
+                    await esperar(INTERVALO);
+                    continue;
+                }
+
                 try {
                     if (Date.now() - ultimaLeitura >= INTERVALO_LEITURA) {
                         await atualizarLeitura();
