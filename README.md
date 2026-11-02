@@ -33,6 +33,15 @@ O script cria o atalho `JARVIS.lnk` na área de trabalho. Para fixá-lo na barra
 
 Carregue a pasta `jarvis_chrome_extension` em `chrome://extensions` usando **Modo do desenvolvedor** e **Carregar sem compactação**. Revise a permissão de acesso aos sites antes de habilitar o uso global.
 
+## Autorizar a extensão na ponte local
+
+1. Carregue a extensão em `chrome://extensions` com o modo do desenvolvedor.
+2. Copie o **ID** exibido no cartão da extensão JARVIS.
+3. No arquivo local `.env`, preencha `JARVIS_EXTENSION_ID=SEU_ID_AQUI`.
+4. Reinicie o JARVIS para aplicar a autorização.
+
+O ID é público, mas a comparação exata impede que qualquer extensão Chrome seja aceita automaticamente. Não publique seu arquivo `.env`.
+
 ## Segurança
 
 - Nunca envie `.env`, chaves de API, tokens ou dados de login ao GitHub.
