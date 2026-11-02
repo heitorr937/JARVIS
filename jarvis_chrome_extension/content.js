@@ -75,6 +75,12 @@
             url: location.href,
             titulo: document.title,
             texto: (document.body?.innerText || "").slice(0, 16000),
+            rolagem: {
+                topo: Math.round(window.scrollY || 0),
+                altura: Math.max(document.documentElement?.scrollHeight || 0, document.body?.scrollHeight || 0),
+                viewport: window.innerHeight || 0,
+                chegou_ao_final: Math.ceil((window.scrollY || 0) + (window.innerHeight || 0)) >= Math.max(document.documentElement?.scrollHeight || 0, document.body?.scrollHeight || 0) - 8
+            },
             elementos
         };
     }
