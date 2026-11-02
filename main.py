@@ -2239,6 +2239,90 @@ def preparar_e_analisar_controle_computador(
 
 
 
+def compactar_contexto_dom(dados, limite_elementos=40, limite_texto=6500):
+    """Reduz o contexto enviado ao modelo sem perder os controles mais úteis."""
+    texto = re.sub(r"\\n{3,}", "\\n\\n", str(dados.get("texto", ""))).strip()
+    texto = texto[:limite_texto]
+
+    elementos = dados.get("elementos", [])
+    if not isinstance(elementos, list):
+        elementos = []
+
+    def pontuar(elemento):
+        tag = str(elemento.get("tag", "")).lower()
+        tipo = str(elemento.get("tipo", "")).lower()
+        role = str(elemento.get("role", "")).lower()
+        nome = str(elemento.get("nome", "")).lower()
+        pontos = 0
+        if tag in ("input", "textarea", "select", "button"):
+            pontos += 8
+        elif role in ("button", "link", "checkbox", "radio", "combobox", "menuitem", "tab"):
+            pontos += 7
+        elif tag == "a" or elemento.get("href"):
+            pontos += 4
+        if re.search(r"pesquis|buscar|busca|search|query|consulta|google", nome):
+            pontos += 8
+        if re.search(r"entrar|login|atividade|quest|continuar|próxim|proxim|abrir", nome):
+            pontos += 3
+        if elemento.get("desabilitado"):
+            pontos -= 5
+        return pontos
+
+    selecionados = sorted(
+        elementos,
+        key=lambda e: (-pontuar(e), int(e.get("indice", 0))
+                       if isinstance(e.get("indice"), int) else 0)
+    )[:limite_elementos]
+    selecionados.sort(
+        key=lambda e: int(e.get("indice", 0))
+        if isinstance(e.get("indice"), int) else 0
+    )
+
+    campos = (
+        "indice", "tag", "role", "tipo", "desabilitado", "obrigatorio",
+        "nome", "href", "opcoes", "marcado", "indice_selecionado", "tem_valor"
+    )
+    elementos_compactados = []
+    for elemento in selecionados:
+        item = {chave: elemento.get(chave) for chave in campos if chave in elemento}
+        if isinstance(item.get("nome"), str):
+            item["nome"] = item["nome"][:120]
+        if isinstance(item.get("href"), str):
+            item["href"] = item["href"][:240]
+        opcoes = item.get("opcoes")
+        if isinstance(opcoes, list):
+            item["opcoes"] = [
+                {
+                    "indice": opcao.get("indice"),
+                    "texto": str(opcao.get("texto", ""))[:80],
+                    "valor": str(opcao.get("valor", ""))[:80],
+                    "desabilitada": bool(opcao.get("desabilitada", False))
+                }
+                for opcao in opcoes[:10]
+                if isinstance(opcao, dict)
+            ]
+        elementos_compactados.append(item)
+
+    contexto = {
+        "titulo": str(dados.get("titulo", ""))[:180],
+        "url": str(dados.get("url", ""))[:500],
+        "texto": texto,
+        "elementos": elementos_compactados
+    }
+
+    # Orçamento defensivo de caracteres: mantém o prompt bem abaixo do
+    # limite de tokens por minuto mesmo em páginas com muitos controles.
+    while len(json.dumps(contexto, ensure_ascii=False)) > 14000:
+        if len(contexto["elementos"]) > 18:
+            contexto["elementos"] = contexto["elementos"][:-5]
+        elif len(contexto["texto"]) > 2200:
+            contexto["texto"] = contexto["texto"][:max(2200, len(contexto["texto"]) - 1200)]
+        else:
+            break
+
+    return contexto
+
+
 def preparar_e_analisar_controle_dom(pedido):
     """Executa ações simples no Chrome usando os elementos reais da página."""
     etapas = []
@@ -2251,7 +2335,7 @@ def preparar_e_analisar_controle_dom(pedido):
         for _ in range(limite):
             dados = navegador_dom.ler_pagina()
             elementos = dados.get("elementos", [])
-            texto_pagina = str(dados.get("texto", ""))[:12000]
+            texto_pagina = str(dados.get("texto", ""))[:6500]
 
             if not texto_pagina and not elementos:
                 raise ErroNavegadorJARVIS(
@@ -2259,29 +2343,7 @@ def preparar_e_analisar_controle_dom(pedido):
                     "na aba correta do Chrome."
                 )
 
-            contexto = {
-                "titulo": dados.get("titulo", ""),
-                "url": dados.get("url", ""),
-                "texto": texto_pagina,
-                "elementos": [
-                    {
-                        "indice": e.get("indice"),
-                        "tag": e.get("tag"),
-                        "role": e.get("role", ""),
-                        "tipo": e.get("tipo"),
-                        "desabilitado": e.get("desabilitado", False),
-                        "obrigatorio": e.get("obrigatorio", False),
-                        "nome": e.get("nome"),
-                        "valor": e.get("valor"),
-                        "href": e.get("href"),
-                        "opcoes": e.get("opcoes", []),
-                        "marcado": e.get("marcado"),
-                        "indice_selecionado": e.get("indice_selecionado"),
-                        "tem_valor": e.get("tem_valor")
-                    }
-                    for e in elementos[:100]
-                ]
-            }
+            contexto = compactar_contexto_dom(dados)
 
             instrucao = (
                 "Você é o planejador de ações do JARVIS. Responda SOMENTE "
