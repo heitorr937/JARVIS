@@ -71,10 +71,46 @@
                 };
             });
 
+        const textoVisivel = (() => {
+            if (!document.body) return "";
+            const linhas = [];
+            const walker = document.createTreeWalker(
+                document.body,
+                NodeFilter.SHOW_TEXT,
+                {
+                    acceptNode(no) {
+                        const pai = no.parentElement;
+                        if (!pai || !no.nodeValue || !no.nodeValue.trim()) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        if (pai.closest("script, style, noscript, template, [aria-hidden='true']")) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        const estilo = getComputedStyle(pai);
+                        if (estilo.display === "none" || estilo.visibility === "hidden") {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        const ret = document.createRange();
+                        ret.selectNodeContents(no);
+                        const visivel = [...ret.getClientRects()].some(r =>
+                            r.bottom > 0 && r.top < window.innerHeight &&
+                            r.right > 0 && r.left < window.innerWidth
+                        );
+                        return visivel ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+                    }
+                }
+            );
+            while (walker.nextNode()) {
+                const trecho = walker.currentNode.nodeValue.replace(/\\s+/g, " ").trim();
+                if (trecho) linhas.push(trecho);
+            }
+            return linhas.join("\\n").slice(0, 16000);
+        })();
+
         return {
             url: location.href,
             titulo: document.title,
-            texto: (document.body?.innerText || "").slice(0, 16000),
+            texto: textoVisivel,
             rolagem: {
                 topo: Math.round(window.scrollY || 0),
                 altura: Math.max(document.documentElement?.scrollHeight || 0, document.body?.scrollHeight || 0),
