@@ -22,10 +22,10 @@ def extrair_estrutura_atividade(snapshot):
     alternativa = None
 
     padrao_q = re.compile(
-        r"^(?:(?:quest[aã]o|quest[aã]o\s+de)\s*)?(\d{1,2})\s*[.)ºª:-]\s*(.*)$",
+        r"^(?:(?:quest[aã]o|quest[aã]o\s+de)\s*)?(\d{1,2})\s*[.)ºª:–—-]\s*(.*)$",
         re.I
     )
-    padrao_questao = re.compile(r"^(quest[aã]o)\s*(\d{1,2})\s*[:.)-]?\s*(.*)$", re.I)
+    padrao_questao = re.compile(r"^(quest[aã]o)\s*(\d{1,2})\s*[:.)–—-]?\s*(.*)$", re.I)
     padrao_alt = re.compile(r"^\(?([A-E])\)?\s*[).:-]\s*(.+)$", re.I)
 
     for linha in linhas:
