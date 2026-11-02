@@ -43,7 +43,6 @@
             e.getAttribute("aria-label") ||
             e.getAttribute("placeholder") ||
             e.getAttribute("name") ||
-            e.value ||
             e.title ||
             ""
         ).trim().slice(0, 200);
@@ -65,7 +64,9 @@
                     nome: nomeElemento(e),
                     tipo: e.type || "",
                     href: e.href || "",
-                    valor: e.value || "",
+                    // Nunca transmitir valores digitados ou selecionados:
+                    // podem conter senhas, dados pessoais ou informações financeiras.
+                    valor: "",
                     seletor: "jv:" + e.dataset.jv
                 };
             });
@@ -210,11 +211,11 @@
 
         if (
             elemento.tagName === "INPUT" &&
-            !["text", "search", "email", "url", "tel", "password", ""].includes(
+            !["text", "search", "email", "url", "tel", ""].includes(
                 String(elemento.type || "").toLowerCase()
             )
         ) {
-            throw new Error("Este tipo de campo não pode ser preenchido automaticamente.");
+            throw new Error("Este tipo de campo não pode ser preenchido automaticamente. Senhas e códigos de autenticação nunca são preenchidos pelo JARVIS.");
         }
 
         if (String(valor ?? "").length > 5000) {
