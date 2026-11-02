@@ -8,3 +8,4 @@ pyperclip
 PyGetWindow
 Pillow
 PyInstaller
+PyAudio>=0.2.14
