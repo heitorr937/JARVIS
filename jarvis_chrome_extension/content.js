@@ -480,18 +480,24 @@
 
             case "pesquisar": {
                 const termo = String(comando.termo || "").trim();
-                const host = location.hostname.toLowerCase();
+                // Normaliza o host para lidar com redirecionamentos do Google
+                // e com nomes DNS que terminam em ponto.
+                const host = location.hostname.toLowerCase().replace(/\.$/, "");
 
                 if (!termo || termo.length > 300) {
                     throw new Error("O termo de pesquisa é inválido.");
                 }
 
-                // A pesquisa automática só é permitida no Google.
-                const buscadores = [
-                    "google.com", "www.google.com", "google.com.br",
-                    "www.google.com.br"
-                ];
-                if (!buscadores.includes(host)) {
+                // Permite somente domínios controlados pelo Google.
+                // A comparação por sufixo exige o ponto antes do domínio,
+                // evitando aceitar endereços falsos como "google.com.exemplo.com".
+                const googlePermitido =
+                    host === "google.com" ||
+                    host.endsWith(".google.com") ||
+                    host === "google.com.br" ||
+                    host.endsWith(".google.com.br");
+
+                if (!googlePermitido) {
                     throw new Error("Por segurança, a pesquisa automática está liberada apenas no Google.");
                 }
 
