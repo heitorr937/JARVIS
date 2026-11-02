@@ -685,6 +685,11 @@ class NavegadorJARVIS:
             return f"Solicitei a abertura de {resultado['url']}"
 
         if tipo == "clicar":
+            if acao.get("identificador"):
+                return self._enviar_comando({
+                    "acao": "clicar_identificador",
+                    "identificador": str(acao["identificador"])
+                })
             if "indice" in acao:
                 return self.clicar(acao["indice"])
 
@@ -695,6 +700,11 @@ class NavegadorJARVIS:
             )
 
         if tipo == "preencher":
+            if acao.get("identificador"):
+                return self.preencher_campo(
+                    str(acao["identificador"]),
+                    str(acao.get("valor", ""))
+                )
             if "indice" in acao:
                 return self.preencher(
                     acao["indice"],
