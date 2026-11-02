@@ -48,6 +48,31 @@
         ).trim().slice(0, 200);
     }
 
+    function localizarAreaRolagem() {
+        const documento = document.scrollingElement || document.documentElement;
+        const candidatos = [documento];
+
+        for (const elemento of document.querySelectorAll("body *")) {
+            if (elemento === documento || elemento === document.body) continue;
+            const estilo = getComputedStyle(elemento);
+            const rolagemVertical = ["auto", "scroll", "overlay"].includes(estilo.overflowY);
+            if (!rolagemVertical || elemento.scrollHeight <= elemento.clientHeight + 80) continue;
+            const retangulo = elemento.getBoundingClientRect();
+            if (retangulo.width < 80 || retangulo.height < 80) continue;
+            if (estilo.display === "none" || estilo.visibility === "hidden") continue;
+            candidatos.push(elemento);
+        }
+
+        // Prioriza o maior painel rolável visível; em empate, o de maior conteúdo.
+        return candidatos.reduce((melhor, atual) => {
+            const areaAtual = Math.max(0, atual.clientWidth) * Math.max(0, atual.clientHeight);
+            const areaMelhor = Math.max(0, melhor.clientWidth) * Math.max(0, melhor.clientHeight);
+            const pesoAtual = areaAtual * Math.log1p(atual.scrollHeight / Math.max(1, atual.clientHeight));
+            const pesoMelhor = areaMelhor * Math.log1p(melhor.scrollHeight / Math.max(1, melhor.clientHeight));
+            return pesoAtual > pesoMelhor ? atual : melhor;
+        }, documento);
+    }
+
     function capturarPagina() {
         const elementos = elementosVisiveis()
             .slice(0, 200)
@@ -111,12 +136,19 @@
             url: location.href,
             titulo: document.title,
             texto: textoVisivel,
-            rolagem: {
-                topo: Math.round(window.scrollY || 0),
-                altura: Math.max(document.documentElement?.scrollHeight || 0, document.body?.scrollHeight || 0),
-                viewport: window.innerHeight || 0,
-                chegou_ao_final: Math.ceil((window.scrollY || 0) + (window.innerHeight || 0)) >= Math.max(document.documentElement?.scrollHeight || 0, document.body?.scrollHeight || 0) - 8
-            },
+            rolagem: (() => {
+                const area = localizarAreaRolagem();
+                const topo = Math.round(area.scrollTop || 0);
+                const altura = Math.max(area.scrollHeight || 0, area.clientHeight || 0);
+                const viewport = area.clientHeight || window.innerHeight || 0;
+                return {
+                    topo,
+                    altura,
+                    viewport,
+                    tipo: area === (document.scrollingElement || document.documentElement) ? "documento" : "painel",
+                    chegou_ao_final: Math.ceil(topo + viewport) >= altura - 8
+                };
+            })(),
             elementos
         };
     }
@@ -365,12 +397,13 @@
                     Math.min(Number(comando.pixels) || 600, 1600)
                 );
 
-                window.scrollBy({
+                const area = localizarAreaRolagem();
+                area.scrollBy({
                     top: pixels * (comando.direcao === "cima" ? -1 : 1),
                     behavior: "smooth"
                 });
 
-                return { mensagem: "Página rolada." };
+                return { mensagem: "Área principal da página rolada." };
             }
 
             case "tecla": {
