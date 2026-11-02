@@ -852,7 +852,7 @@ def criar_completion_com_retry_rate_limit(criar_completion, **argumentos):
                 except (TypeError, ValueError):
                     segundos = 1.0
 
-            time.sleep(min(max(segundos + 0.2, 0.3), 15.0))
+            time.sleep(min(max(segundos + 1.0, 1.0), 60.0))
 
     raise RuntimeError("O limite temporário da API impediu a resposta.")
 
@@ -2239,7 +2239,7 @@ def preparar_e_analisar_controle_computador(
 
 
 
-def compactar_contexto_dom(dados, limite_elementos=15, limite_texto=2400):
+def compactar_contexto_dom(dados, limite_elementos=8, limite_texto=900):
     """Reduz o contexto enviado ao modelo sem perder os controles mais úteis."""
     texto = re.sub(r"\n{3,}", "\n\n", str(dados.get("texto", ""))).strip()
     texto = texto[:limite_texto]
@@ -2286,19 +2286,19 @@ def compactar_contexto_dom(dados, limite_elementos=15, limite_texto=2400):
     for elemento in selecionados:
         item = {chave: elemento.get(chave) for chave in campos if chave in elemento}
         if isinstance(item.get("nome"), str):
-            item["nome"] = item["nome"][:90]
+            item["nome"] = item["nome"][:70]
         if isinstance(item.get("href"), str):
-            item["href"] = item["href"][:160]
+            item["href"] = item["href"][:100]
         opcoes = item.get("opcoes")
         if isinstance(opcoes, list):
             item["opcoes"] = [
                 {
                     "indice": opcao.get("indice"),
-                    "texto": str(opcao.get("texto", ""))[:50],
-                    "valor": str(opcao.get("valor", ""))[:50],
+                    "texto": str(opcao.get("texto", ""))[:35],
+                    "valor": str(opcao.get("valor", ""))[:35],
                     "desabilitada": bool(opcao.get("desabilitada", False))
                 }
-                for opcao in opcoes[:6]
+                for opcao in opcoes[:4]
                 if isinstance(opcao, dict)
             ]
         elementos_compactados.append(item)
@@ -2312,11 +2312,11 @@ def compactar_contexto_dom(dados, limite_elementos=15, limite_texto=2400):
 
     # Orçamento defensivo de caracteres: mantém o prompt bem abaixo do
     # limite de tokens por minuto mesmo em páginas com muitos controles.
-    while len(json.dumps(contexto, ensure_ascii=False)) > 7500:
-        if len(contexto["elementos"]) > 8:
-            contexto["elementos"] = contexto["elementos"][:-3]
-        elif len(contexto["texto"]) > 1200:
-            contexto["texto"] = contexto["texto"][:max(1200, len(contexto["texto"]) - 800)]
+    while len(json.dumps(contexto, ensure_ascii=False)) > 3500:
+        if len(contexto["elementos"]) > 4:
+            contexto["elementos"] = contexto["elementos"][:-2]
+        elif len(contexto["texto"]) > 450:
+            contexto["texto"] = contexto["texto"][:max(450, len(contexto["texto"]) - 400)]
         else:
             break
 
