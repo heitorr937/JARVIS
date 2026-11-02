@@ -462,6 +462,114 @@ class NavegadorJARVIS:
 
         return dados
 
+    def ler_pagina_completa(
+        self,
+        max_trechos=30,
+        pausa=1.0,
+        limite_caracteres=100000
+    ):
+        """Percorre a página e reúne o texto visível de cada trecho.
+
+        A leitura é limitada por quantidade de trechos e caracteres para
+        evitar rolagens infinitas em páginas dinâmicas.
+        """
+        max_trechos = max(2, min(int(max_trechos), 50))
+        limite_caracteres = max(5000, min(int(limite_caracteres), 150000))
+        pausa = max(0.5, min(float(pausa), 3.0))
+
+        primeiro = self._obter_snapshot()
+        url_inicial = str(primeiro.get("url", ""))
+        titulo = str(primeiro.get("titulo", ""))
+        partes = []
+        caracteres = 0
+        trechos = 0
+        sem_progresso = 0
+        completa = False
+        aviso = ""
+
+        for _ in range(max_trechos):
+            dados = self._obter_snapshot()
+            if str(dados.get("url", "")) != url_inicial:
+                aviso = "A aba ou o endereço mudou durante a leitura."
+                break
+
+            texto = str(dados.get("texto", "")).strip()
+            if texto:
+                if partes:
+                    anterior = partes[-1]
+                    max_overlap = min(len(anterior), len(texto), 3000)
+                    sobreposicao = 0
+                    for tamanho in range(max_overlap, 0, -1):
+                        if anterior[-tamanho:] == texto[:tamanho]:
+                            sobreposicao = tamanho
+                            break
+                    novo = texto[sobreposicao:].strip()
+                else:
+                    novo = texto
+
+                if novo:
+                    partes.append(novo)
+                    caracteres += len(novo)
+                    trechos += 1
+                    sem_progresso = 0
+                else:
+                    sem_progresso += 1
+
+            rolagem = dados.get("rolagem") or {}
+            if rolagem.get("chegou_ao_final") is True:
+                completa = True
+                break
+
+            if caracteres >= limite_caracteres:
+                aviso = "A leitura atingiu o limite de caracteres."
+                break
+
+            topo_antes = int(rolagem.get("topo") or 0)
+            viewport = max(300, int(rolagem.get("viewport") or 700))
+            self.rolar("baixo", int(viewport * 0.75))
+
+            limite_espera = time.time() + max(3.0, pausa + 2.0)
+            mudou = False
+            while time.time() < limite_espera:
+                time.sleep(0.2)
+                atual = self._obter_snapshot()
+                meta = atual.get("rolagem") or {}
+                if (
+                    str(atual.get("url", "")) != url_inicial
+                ):
+                    aviso = "A aba ou o endereço mudou durante a leitura."
+                    break
+                if int(meta.get("topo") or 0) > topo_antes:
+                    mudou = True
+                    break
+
+            if aviso:
+                break
+            if not mudou:
+                sem_progresso += 1
+                if sem_progresso >= 2:
+                    aviso = (
+                        "Não consegui confirmar novas áreas da página após "
+                        "duas tentativas. A leitura pode estar incompleta."
+                    )
+                    break
+            time.sleep(pausa)
+
+        if not completa and not aviso:
+            aviso = (
+                "A leitura parou no limite de trechos. Não posso confirmar "
+                "que todo o conteúdo da página foi capturado."
+            )
+
+        return {
+            "titulo": titulo,
+            "url": url_inicial,
+            "texto": "\\n\\n".join(partes)[:limite_caracteres],
+            "trechos_lidos": trechos,
+            "leitura_completa": completa,
+            "aviso": aviso
+        }
+
     def abrir_url(self, url):
         url = (url or "").strip()
 
