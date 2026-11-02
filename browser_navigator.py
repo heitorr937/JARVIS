@@ -243,19 +243,22 @@ class NavegadorJARVIS:
                 elif caminho == "/resultado":
                     identificador = dados.get("id")
 
-                    if isinstance(identificador, str) and identificador:
+                    if (
+                        isinstance(identificador, str)
+                        and re.fullmatch(r"[0-9a-f]{32}", identificador)
+                    ):
                         with navegador._lock:
-                            # Só mantém resultados de comandos ainda pendentes.
-                            ids_pendentes = {
-                                item.get("id") for item in navegador._comandos
+                            # O comando já saiu da fila quando a extensão
+                            # devolve o resultado; por isso validamos o formato
+                            # do identificador e limitamos o cache em memória.
+                            if len(navegador._resultados) >= 100:
+                                navegador._resultados.clear()
+                            navegador._resultados[identificador] = {
+                                "id": identificador,
+                                "ok": bool(dados.get("ok")),
+                                "mensagem": str(dados.get("mensagem", ""))[:1000],
+                                "erro": str(dados.get("erro", ""))[:1000]
                             }
-                            if identificador in ids_pendentes:
-                                navegador._resultados[identificador] = {
-                                    "id": identificador,
-                                    "ok": bool(dados.get("ok")),
-                                    "mensagem": str(dados.get("mensagem", ""))[:1000],
-                                    "erro": str(dados.get("erro", ""))[:1000]
-                                }
 
                     self.responder(200, {"ok": True})
 
