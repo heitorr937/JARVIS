@@ -324,6 +324,11 @@ class NavegadorJARVIS:
             self._resultados.pop(identificador, None)
             snapshot = self._snapshot or {}
             aba_id = snapshot.get("_jarvis_tab_id")
+            if aba_id is None:
+                raise ErroNavegadorJARVIS(
+                    "Ainda não identifiquei uma aba do Chrome. "
+                    "Abra uma página e aguarde a extensão sincronizar."
+                )
             comando["_aba_id"] = aba_id
             self._comandos.append(comando)
 
