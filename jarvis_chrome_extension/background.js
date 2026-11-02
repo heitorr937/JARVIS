@@ -32,6 +32,18 @@ async function injetarNaAba(tabId, url) {
             target: { tabId },
             files: ["content.js"]
         });
+
+        // Uma injeção iniciada antes do clique em "desativar" pode terminar
+        // depois do broadcast de parada. Reconfere o estado e interrompe
+        // imediatamente qualquer script que tenha sido injetado nessa corrida.
+        const estadoFinal = await chrome.storage.local.get(CHAVE_ATIVO);
+        if (estadoFinal[CHAVE_ATIVO] !== true) {
+            try {
+                await chrome.tabs.sendMessage(tabId, { tipo: "JARVIS_PARAR" });
+            } catch (_) {
+                // A navegação pode ter fechado ou substituído a aba.
+            }
+        }
     } catch (erro) {
         // Algumas páginas especiais ou protegidas não aceitam scripts.
         console.debug("JARVIS: não foi possível ativar nesta página:", erro.message);
