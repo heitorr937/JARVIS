@@ -1,14 +1,27 @@
 JARVIS — EXTENSÃO DO CHROME
 
-1) Extraia jarvis_chrome_extension.zip.
+INSTALAÇÃO / ATUALIZAÇÃO
+1) Extraia a pasta jarvis_chrome_extension.
 2) No Chrome, abra chrome://extensions.
-3) Ative Modo do desenvolvedor.
-4) Clique em Carregar sem compactação e selecione a pasta jarvis_chrome_extension.
-5) Copie browser_navigator.py e teste_navegador.py para C:\\Nativ.
-6) Abra uma página comum (HTTP/HTTPS), clique no ícone da extensão e em Ativar nesta página.
-7) No VS Code, execute: python teste_navegador.py
+3) Ative o Modo do desenvolvedor.
+4) Clique em "Carregar sem compactação" e selecione a pasta jarvis_chrome_extension.
+5) Se já havia uma versão instalada, clique em Atualizar na página de extensões ou recarregue a extensão.
+6) Ao ativar a extensão atualizada, o Chrome solicitará permissão para ler e alterar dados nos sites. Essa permissão é necessária para a navegação global. Conceda-a apenas se confiar no projeto e mantenha a extensão desativada quando não estiver usando o JARVIS.
 
-O teste apenas lê a página. Não clica, não envia formulários e não entrega atividades.
-Este módulo ainda não está integrado automaticamente ao main.py.
-Não ative em páginas de banco, pagamento ou que mostrem senhas/dados sensíveis.
-Para desativar, abra o popup da extensão e clique em Desativar nesta página.
+CONTROLE GLOBAL
+- Clique no ícone do JARVIS no Chrome.
+- "ATIVAR EM TODAS AS ABAS" ativa nas páginas HTTP/HTTPS já abertas e nas páginas abertas depois.
+- "DESATIVAR GLOBALMENTE" interrompe a automação em todas as abas.
+- O estado ligado/desligado fica salvo pelo Chrome.
+- A extensão não consegue injetar código em páginas internas do Chrome, na Chrome Web Store e em algumas páginas protegidas.
+- Apenas a aba visível consulta a ponte compartilhada e consome comandos, evitando que abas em segundo plano capturem ações destinadas à aba atual.
+
+PONTE PYTHON
+A extensão comunica-se com o JARVIS local em http://127.0.0.1:8765.
+O módulo browser_navigator.py precisa estar instalado no projeto e o processo principal do JARVIS precisa estar em execução para que leitura e automação funcionem.
+
+LIMITES DE SEGURANÇA
+- A extensão não envia formulários com ENTER nem executa botões de envio/submissão.
+- Não use em páginas de banco, pagamentos ou que exibam senhas e dados sensíveis.
+- A ativação global concede acesso amplo às páginas web. Desative globalmente quando não precisar dela.
+- A automação ainda precisa ser testada no Chrome real e integrada à interface principal do aplicativo.
