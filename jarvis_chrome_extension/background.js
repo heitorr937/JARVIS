@@ -38,10 +38,28 @@ async function injetarNaAba(tabId, url) {
     }
 }
 
+async function informarEstadoAoPython(ativo, aba = null) {
+    try {
+        await fetch(BASE + "/extension/status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                ativo,
+                titulo: aba?.title || "",
+                url: aba?.url || ""
+            })
+        });
+    } catch (_) {
+        // A ponte pode ainda não estar iniciada. O popup continua funcional.
+    }
+}
+
 async function ativarGlobalmente() {
     await chrome.storage.local.set({ [CHAVE_ATIVO]: true });
     const abas = await chrome.tabs.query({});
     await Promise.all(abas.map(aba => injetarNaAba(aba.id, aba.url)));
+    const ativa = abas.find(aba => aba.active && aba.lastFocusedWindow) || null;
+    await informarEstadoAoPython(true, ativa);
     return abas.length;
 }
 
@@ -56,12 +74,18 @@ async function desativarGlobalmente() {
             // A aba pode não ter o content script carregado.
         }
     }));
+    await informarEstadoAoPython(false);
     return abas.length;
 }
 
 chrome.tabs.onUpdated.addListener((tabId, info, aba) => {
     if (info.status === "complete") {
         injetarNaAba(tabId, aba.url);
+        chrome.storage.local.get(CHAVE_ATIVO).then(estado => {
+            if (estado[CHAVE_ATIVO] === true && aba.active) {
+                informarEstadoAoPython(true, aba);
+            }
+        });
     }
 });
 
