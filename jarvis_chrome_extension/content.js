@@ -50,7 +50,7 @@
 
     function localizarAreaRolagem() {
         const documento = document.scrollingElement || document.documentElement;
-        const candidatos = [documento];
+        const candidatos = [{ elemento: documento, prioridade: 1 }];
 
         for (const elemento of document.querySelectorAll("body *")) {
             if (elemento === documento || elemento === document.body) continue;
@@ -58,19 +58,32 @@
             const rolagemVertical = ["auto", "scroll", "overlay"].includes(estilo.overflowY);
             if (!rolagemVertical || elemento.scrollHeight <= elemento.clientHeight + 80) continue;
             const retangulo = elemento.getBoundingClientRect();
-            if (retangulo.width < 80 || retangulo.height < 80) continue;
+            if (retangulo.width < 160 || retangulo.height < 120) continue;
+            if (retangulo.bottom <= 0 || retangulo.top >= window.innerHeight) continue;
             if (estilo.display === "none" || estilo.visibility === "hidden") continue;
-            candidatos.push(elemento);
+
+            // Evita escolher barras laterais e menus quando há uma região
+            // principal ou artigo rolável na página.
+            const semantico = elemento.matches(
+                "main, article, [role='main'], [data-testid*='main' i]"
+            ) || Boolean(elemento.closest("main, [role='main']"));
+            candidatos.push({
+                elemento,
+                prioridade: semantico ? 2.5 : 1
+            });
         }
 
-        // Prioriza o maior painel rolável visível; em empate, o de maior conteúdo.
         return candidatos.reduce((melhor, atual) => {
-            const areaAtual = Math.max(0, atual.clientWidth) * Math.max(0, atual.clientHeight);
-            const areaMelhor = Math.max(0, melhor.clientWidth) * Math.max(0, melhor.clientHeight);
-            const pesoAtual = areaAtual * Math.log1p(atual.scrollHeight / Math.max(1, atual.clientHeight));
-            const pesoMelhor = areaMelhor * Math.log1p(melhor.scrollHeight / Math.max(1, melhor.clientHeight));
-            return pesoAtual > pesoMelhor ? atual : melhor;
-        }, documento);
+            const peso = ({ elemento, prioridade }) => {
+                const largura = Math.max(0, elemento.clientWidth);
+                const altura = Math.max(0, elemento.clientHeight);
+                const area = largura * altura;
+                const proporcaoConteudo =
+                    elemento.scrollHeight / Math.max(1, altura);
+                return prioridade * area * Math.log1p(proporcaoConteudo);
+            };
+            return peso(atual) > peso(melhor) ? atual : melhor;
+        }).elemento;
     }
 
     function capturarPagina() {
