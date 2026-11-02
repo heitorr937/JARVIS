@@ -40,6 +40,7 @@ PASTA = (
     else os.path.dirname(os.path.abspath(__file__))
 )
 load_dotenv(os.path.join(PASTA, ".env"))
+os.environ.setdefault("JARVIS_DATA_DIR", PASTA)
 
 knowledge_base.initialize_database()
 
