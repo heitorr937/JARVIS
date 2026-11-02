@@ -2,11 +2,11 @@
 
 ## Preparar o ambiente
 
-1. Instale Python 3.11 ou superior no Windows e habilite o launcher `py`.
+1. Para iniciar pelo código, instale Python 3.11 ou superior no Windows e habilite o launcher `py`. Para gerar o executável com `build_windows.ps1`, instale especificamente Python 3.11 (64 bits), por compatibilidade mais previsível com o PyAudio.
 2. Copie `.env.example` para `.env` e preencha `GROQ_API_KEY`.
 3. Para iniciar a versão Python, execute `INICIAR_JARVIS.bat`.
 
-O inicializador cria `.venv` e instala as dependências listadas em `requirements.txt`.
+O inicializador cria `.venv` e instala as dependências listadas em `requirements.txt`. Na primeira execução, essa etapa pode demorar e exige conexão com a internet.
 
 ## Criar o executável Windows
 
