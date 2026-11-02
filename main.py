@@ -2342,6 +2342,20 @@ def preparar_e_analisar_controle_dom(pedido):
                     raise RuntimeError("O planejador indicou um controle inexistente.")
 
                 elemento = next(e for e in elementos if e.get("indice") == indice)
+                identificador = (
+                    elemento.get("seletor")
+                    or (
+                        "jv:" + str(elemento.get("id"))
+                        if elemento.get("id") is not None
+                        else ""
+                    )
+                )
+                if not identificador:
+                    raise RuntimeError(
+                        "O controle mudou ou não possui identificador estável. "
+                        "Atualize a leitura da página antes de tentar novamente."
+                    )
+                plano["identificador"] = identificador
                 nome = str(elemento.get("nome", "")).lower()
                 if tipo == "clicar" and (
                     elemento.get("tipo") == "submit"
