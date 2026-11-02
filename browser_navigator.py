@@ -131,12 +131,16 @@ class NavegadorJARVIS:
                     })
 
                 elif caminho == "/next":
+                    from urllib.parse import parse_qs
+                    parametros = parse_qs(urlparse(self.path).query)
+                    aba_id = parametros.get("tab_id", [None])[0]
                     with navegador._lock:
-                        comando = (
-                            navegador._comandos.pop(0)
-                            if navegador._comandos
-                            else None
-                        )
+                        comando = None
+                        if navegador._comandos:
+                            primeiro = navegador._comandos[0]
+                            destino = primeiro.get("_aba_id")
+                            if destino is None or str(destino) == str(aba_id):
+                                comando = navegador._comandos.pop(0)
 
                     self.responder(200, {
                         "ok": True,
@@ -318,6 +322,10 @@ class NavegadorJARVIS:
 
         with self._lock:
             self._resultados.pop(identificador, None)
+            with self._lock:
+                snapshot = self._snapshot or {}
+            aba_id = snapshot.get("_jarvis_tab_id")
+            comando["_aba_id"] = aba_id
             self._comandos.append(comando)
 
         inicio = time.time()
