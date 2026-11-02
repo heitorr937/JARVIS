@@ -1,60 +1,39 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <title>JARVIS</title>
-
     <style>
         body {
-            width: 250px;
+            width: 270px;
             padding: 15px;
             font-family: Arial, sans-serif;
             background: #101820;
             color: white;
         }
-
-        h2 {
-            text-align: center;
-            color: #00bfff;
-        }
-
+        h2 { text-align: center; color: #00bfff; letter-spacing: 3px; }
         button {
             width: 100%;
-            padding: 11px;
+            padding: 12px;
             margin-top: 9px;
             border: none;
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
         }
-
-        #ativar {
-            background: #008cff;
-            color: white;
-        }
-
-        #desativar {
-            background: #333f4b;
-            color: white;
-        }
-
-        #status {
-            margin-top: 14px;
-            font-size: 12px;
-            text-align: center;
-        }
+        button:disabled { opacity: .45; cursor: default; }
+        #ativar { background: #008cff; color: white; }
+        #desativar { background: #333f4b; color: white; }
+        #status { margin-top: 14px; font-size: 12px; text-align: center; line-height: 1.5; }
+        .nota { margin-top: 12px; color: #9aabb8; font-size: 10px; text-align: center; }
     </style>
 </head>
-
 <body>
     <h2>JARVIS</h2>
-
-    <button id="ativar">Ativar nesta aba</button>
-    <button id="desativar">Desativar</button>
-
-    <div id="status">Aguardando comando...</div>
-
+    <button id="ativar">ATIVAR EM TODAS AS ABAS</button>
+    <button id="desativar">DESATIVAR GLOBALMENTE</button>
+    <div id="status">Verificando estado...</div>
+    <div class="nota">A ativação vale para abas abertas e novas páginas HTTP/HTTPS.</div>
     <script src="popup.js"></script>
 </body>
 </html>
