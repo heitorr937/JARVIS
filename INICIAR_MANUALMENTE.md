@@ -6,7 +6,7 @@ Este procedimento usa o Python instalado para preparar e iniciar o código-fonte
 
 ## 1. Requisitos
 
-- Python 3.11 de 64 bits instalado e disponível pelo comando `py`.
+- Python 3.11 ou superior, de 64 bits, instalado e disponível pelo comando `py`.
 - A pasta do projeto JARVIS extraída em um local conhecido.
 - Arquivo local `.env` configurado com `GROQ_API_KEY`.
 
@@ -21,17 +21,17 @@ No Explorador de Arquivos, abra a pasta do JARVIS. Clique na barra de endereço,
 Digite:
 
 ```powershell
-py -3.11 --version
+py -3 --version
 ```
 
-O resultado deve indicar Python 3.11.x. Se o comando não for reconhecido, pare aqui e instale Python 3.11 de 64 bits pelo site oficial do Python.
+O resultado deve indicar Python 3.11 ou superior. Se o comando não for reconhecido, pare aqui e instale uma versão atual de 64 bits pelo site oficial do Python.
 
 ## 4. Preparar o ambiente isolado
 
 Digite estes comandos, um por vez:
 
 ```powershell
-py -3.11 -m venv .venv
+py -3 -m venv .venv
 ```
 
 ```powershell
