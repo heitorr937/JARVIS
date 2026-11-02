@@ -110,9 +110,14 @@ chrome.runtime.onMessage.addListener((mensagem, remetente, responder) => {
                     resultado = { ativo: estado[CHAVE_ATIVO] === true };
                     break;
                 }
-                case "JARVIS_SNAPSHOT":
+                case "JARVIS_SNAPSHOT": {
                     resultado = await requisicao("/snapshot", mensagem.dados);
+                    const estado = await chrome.storage.local.get(CHAVE_ATIVO);
+                    if (estado[CHAVE_ATIVO] === true) {
+                        await informarEstadoAoPython(true, remetente?.tab || null);
+                    }
                     break;
+                }
                 case "JARVIS_PROXIMO":
                     resultado = await requisicao("/next");
                     break;
