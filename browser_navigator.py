@@ -29,6 +29,11 @@ class NavegadorJARVIS:
         self._thread = None
 
         self._snapshot = None
+        self._extensao_status = {
+            "ativo": False,
+            "ultima_atualizacao": 0,
+            "aba": None
+        }
         self._comandos = []
         self._resultados = {}
 
@@ -101,6 +106,15 @@ class NavegadorJARVIS:
                         "snapshot": snapshot
                     })
 
+                elif caminho == "/extension/status":
+                    with navegador._lock:
+                        estado = dict(navegador._extensao_status)
+
+                    self.responder(200, {
+                        "ok": True,
+                        "extensao": estado
+                    })
+
                 elif caminho == "/next":
                     with navegador._lock:
                         comando = (
@@ -141,6 +155,19 @@ class NavegadorJARVIS:
                 if caminho == "/snapshot":
                     with navegador._lock:
                         navegador._snapshot = dados
+
+                    self.responder(200, {"ok": True})
+
+                elif caminho == "/extension/status":
+                    with navegador._lock:
+                        navegador._extensao_status = {
+                            "ativo": bool(dados.get("ativo")),
+                            "ultima_atualizacao": time.time(),
+                            "aba": {
+                                "titulo": str(dados.get("titulo", ""))[:200],
+                                "url": str(dados.get("url", ""))[:1000]
+                            }
+                        }
 
                     self.responder(200, {"ok": True})
 
@@ -300,6 +327,22 @@ class NavegadorJARVIS:
             "A extensão não respondeu. "
             "Confirme se ela está ativada na aba atual."
         )
+
+    def estado_extensao(self):
+        self._exigir_servidor()
+        try:
+            resposta = self._requisicao("/extension/status")
+            estado = resposta.get("extensao") or {}
+            atualizado = float(estado.get("ultima_atualizacao") or 0)
+            estado["conectada"] = bool(
+                atualizado and time.time() - atualizado < 8
+            )
+            estado["ativo"] = bool(estado.get("ativo") and estado["conectada"])
+            return estado
+        except Exception as erro:
+            raise ErroNavegadorJARVIS(
+                f"Não consegui consultar o estado da extensão: {erro}"
+            ) from erro
 
     def estado(self):
         dados = self._obter_snapshot()
