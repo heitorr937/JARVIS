@@ -2503,15 +2503,28 @@ def eh_pedido_pesquisa_web(texto):
 
 
 def eh_pedido_leitura_pagina(texto):
-    return bool(re.search(
-        r"\b(leia|ler|analise|analisar|resuma|resumir|explique)\b"
-        r".{0,60}\b(página|pagina|site|aba|tela|conteúdo|conteudo)\b|"
-        r"\b(o que|oque)\s+(tem|aparece|está|esta)\s+"
-        r"(nessa|nesta|na)\s+(página|pagina|aba|tela)\b",
+    """Reconhece leitura/resumo de páginas, atividades e questões abertas."""
+    verbo_leitura = (
+        r"\b(leia|ler|leitura|analise|analisar|resuma|resumir|"
+        r"explique|explicar|mostre|mostrar)\b"
+    )
+    alvo_pagina = (
+        r"\b(página|pagina|site|aba|tela|conteúdo|conteudo|"
+        r"atividade|quest[oõ]es|perguntas|exerc[ií]cios)\b"
+    )
+    leitura_direta = bool(re.search(
+        verbo_leitura + r".{0,80}" + alvo_pagina,
         texto,
         re.IGNORECASE
     ))
-
+    pergunta_sobre_pagina = bool(re.search(
+        r"\b(o que|oque)\s+(tem|aparece|está|esta)\s+"
+        r"(nessa|nesta|na)\s+"
+        r"(página|pagina|aba|tela|atividade)\b",
+        texto,
+        re.IGNORECASE
+    ))
+    return leitura_direta or pergunta_sobre_pagina
 
 
 def eh_pedido_identificar_questoes(texto):
