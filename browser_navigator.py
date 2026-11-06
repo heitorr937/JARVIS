@@ -366,7 +366,7 @@ class NavegadorJARVIS:
                 f"Erro ao consultar a extensão: {erro}"
             ) from erro
 
-    def _enviar_comando(self, acao, timeout=10):
+    def _enviar_comando(self, acao, timeout=20):
         self._exigir_servidor()
 
         identificador = uuid.uuid4().hex
