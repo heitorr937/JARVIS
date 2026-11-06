@@ -10,7 +10,7 @@
     window.__JARVIS_EXTENSION_ATIVA__ = true;
 
     const INTERVALO = 500;
-    const INTERVALO_LEITURA = 1500;
+    const INTERVALO_LEITURA = 2000;
 
     let ativo = true;
     let executando = false;
@@ -27,16 +27,22 @@
             '[role="menuitem"]', '[role="tab"]'
         ];
 
-        return [...document.querySelectorAll(seletores.join(","))]
-            .filter(e => {
-                const r = e.getBoundingClientRect();
-                const s = getComputedStyle(e);
+        const encontrados = [];
 
-                return r.width > 0 &&
-                    r.height > 0 &&
-                    s.display !== "none" &&
-                    s.visibility !== "hidden";
-            });
+        // Não percorre todos os controles da página: em sites grandes, como
+        // resultados de busca, isso pode bloquear o ciclo de comandos.
+        for (const e of document.querySelectorAll(seletores.join(","))) {
+            const r = e.getBoundingClientRect();
+            if (r.width <= 0 || r.height <= 0) continue;
+
+            const s = getComputedStyle(e);
+            if (s.display === "none" || s.visibility === "hidden") continue;
+
+            encontrados.push(e);
+            if (encontrados.length >= 120) break;
+        }
+
+        return encontrados;
     }
 
     function nomeElemento(e) {
@@ -143,41 +149,15 @@
                 };
             });
 
-        const textoVisivel = (() => {
-            if (!document.body) return "";
-            const linhas = [];
-            const walker = document.createTreeWalker(
-                document.body,
-                NodeFilter.SHOW_TEXT,
-                {
-                    acceptNode(no) {
-                        const pai = no.parentElement;
-                        if (!pai || !no.nodeValue || !no.nodeValue.trim()) {
-                            return NodeFilter.FILTER_REJECT;
-                        }
-                        if (pai.closest("script, style, noscript, template, [aria-hidden='true']")) {
-                            return NodeFilter.FILTER_REJECT;
-                        }
-                        const estilo = getComputedStyle(pai);
-                        if (estilo.display === "none" || estilo.visibility === "hidden") {
-                            return NodeFilter.FILTER_REJECT;
-                        }
-                        const ret = document.createRange();
-                        ret.selectNodeContents(no);
-                        const visivel = [...ret.getClientRects()].some(r =>
-                            r.bottom > 0 && r.top < window.innerHeight &&
-                            r.right > 0 && r.left < window.innerWidth
-                        );
-                        return visivel ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-                    }
-                }
-            );
-            while (walker.nextNode()) {
-                const trecho = walker.currentNode.nodeValue.replace(/\s+/g, " ").trim();
-                if (trecho) linhas.push(trecho);
-            }
-            return linhas.join("\n").slice(0, 16000);
-        })();
+        // innerText já considera a visibilidade renderizada pelo navegador.
+        // Evita criar um Range e consultar estilos para cada nó de texto,
+        // operação cara em páginas extensas.
+        const textoVisivel = document.body
+            ? String(document.body.innerText || "")
+                .replace(/\n{3,}/g, "\n\n")
+                .trim()
+                .slice(0, 10000)
+            : "";
 
         return {
             url: location.href,
@@ -688,13 +668,15 @@
                 }
 
                 try {
-                    if (Date.now() - ultimaLeitura >= INTERVALO_LEITURA) {
-                        await atualizarLeitura();
-                    }
-
+                    // Primeiro verifica se há comando pendente. A captura da
+                    // página pode ser custosa em sites grandes e não deve atrasar
+                    // a resposta a um comando que já está aguardando no Python.
                     const comando = await consultarComando();
 
                     if (!comando) {
+                        if (Date.now() - ultimaLeitura >= INTERVALO_LEITURA) {
+                            await atualizarLeitura();
+                        }
                         await esperar(INTERVALO);
                         continue;
                     }
