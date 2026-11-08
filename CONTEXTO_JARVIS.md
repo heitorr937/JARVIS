@@ -54,6 +54,8 @@ A branch `fix/timeout-navegacao` descende de `feature/navegacao-inteligente` e c
 Branch de trabalho criada durante a estabilização: `work/estabilizacao-navegacao`, baseada no commit `fac8ac959a07f5541a241e65ed959a7548d29f53`. Ela contém:
 - `tests/test_browser_navigator.py`: testes HTTP e de timeout da ponte.
 - `.github/workflows/tests.yml`: CI para testes Python 3.11/3.12 e sintaxe JavaScript.
+- `diagnostico_jarvis.py`: diagnóstico local sem exibir segredos, incluindo dependências, configuração, manifest e conexão com `127.0.0.1:8765`.
+- `CONTEXTO_JARVIS.md`: este documento de continuidade.
 
 Não fazer merge automático em `main`. Preferir revisão por pull request contra `fix/timeout-navegacao` e só depois planejar integração com `main`.
 
@@ -162,7 +164,7 @@ A branch de estabilização adiciona `diagnostico_jarvis.py` para investigar pro
 - Correlação entre comando e resultado.
 - Cancelamento de comando após timeout.
 
-A CI verifica Python 3.11 e 3.12 e a sintaxe dos scripts JS com Node 20. A existência do workflow no repositório não significa que ele já executou: verificar os resultados de Actions antes de declarar os testes aprovados.
+A CI verifica Python 3.11 e 3.12, compila os arquivos Python e verifica a sintaxe dos scripts JS com Node 20. Durante a primeira execução, foram encontrados NUL bytes em `main_github.py` e `main_local.py`: as duas cópias históricas estavam salvas em UTF-16. Nesta branch foram convertidas para UTF-8 sem alterar o texto. A existência do workflow no repositório não significa que ele já executou: verificar os resultados de Actions antes de declarar os testes aprovados.
 
 ## 9. Processo para futuras alterações
 
