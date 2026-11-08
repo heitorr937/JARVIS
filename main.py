@@ -27,6 +27,7 @@ import pygetwindow as gw
 from browser_navigator import NavegadorJARVIS, ErroNavegadorJARVIS
 from activity_parser import extrair_estrutura_atividade, formatar_estrutura_para_ia
 from activity_tutor import gerar_orientacao_atividade
+from action_safety import bloquear_entrega_atividade
 
 
 # ==========================================
@@ -1311,6 +1312,8 @@ def validar_plano_atividade(acoes, permitir_entrega=False):
         return []
 
     acoes_plano = list(acoes)
+    # Uma resposta da IA nunca pode conceder permissão de submissão.
+    bloquear_entrega_atividade(acoes_plano)
     botoes_entrega = [
         acao for acao in acoes_plano
         if acao["type"] == "click"
@@ -1691,10 +1694,6 @@ def analisar_tela(
                 "disponível; não invente controles."
             )
 
-        entrega_atividade_explicita = (
-            resolver_atividade and eh_pedido_entregar_atividade(pedido)
-        )
-
         if resolver_atividade:
             instrucoes += (
                 " MODO DE RESOLUÇÃO DE ATIVIDADE (estas instruções específicas "
@@ -1718,15 +1717,11 @@ def analisar_tela(
                 "campo de resposta e uma ação type com o texto sugerido; "
                 "se o campo já estiver focado, use somente type. Não adicione "
                 "cliques em botões ou opções quando for preencher texto. "
-                + (
-                    "O usuário pediu explicitamente para entregar a atividade; "
-                    "depois de preencher ou marcar a resposta, inclua como "
-                    "última ação somente o clique no botão de entrega. "
-                    if entrega_atividade_explicita
-                    else
-                    "Não clique em botões Entregar, Enviar, Finalizar, "
-                    "Confirmar ou equivalentes; não submeta a atividade. "
-                )
+                "Não clique em botões Entregar, Enviar, Finalizar, "
+                "Confirmar ou equivalentes; não submeta a atividade, "
+                "mesmo que o usuário peça nesta versão. A entrega automática "
+                "só poderá ser liberada após revisão final e confirmação "
+                "separada, em um fluxo específico. "
                 + "Se não localizar "
                 "com segurança o campo ou a alternativa, retorne actions vazio "
                 "e explique o motivo em answer. A resposta pode conter erros; "
@@ -1955,33 +1950,13 @@ def analisar_tela(
         if resolver_atividade:
             validar_acoes_por_tipo_questao(acoes, tipo_questao)
 
-        if resolver_atividade and controle_iterativo:
-            operacao_de_entrega = re.compile(
-                r"\b(entregar|entrega|enviar|envia|finalizar|finalize|"
-                r"submeter|submit|send|finish|concluir|complete)\b",
-                re.IGNORECASE
-            )
-            for acao in acoes:
-                descricao_acao = (
-                    acao["description"] + " "
-                    + acao.get("target_label", "")
+        if resolver_atividade:
+            bloquear_entrega_atividade(acoes)
+            if not controle_iterativo:
+                acoes = validar_plano_atividade(
+                    acoes,
+                    permitir_entrega=False
                 )
-                if (
-                    not entrega_atividade_explicita
-                    and (
-                        operacao_de_entrega.search(descricao_acao)
-                        or acao.get("key") == "enter"
-                    )
-                ):
-                    raise ValueError(
-                        "A atividade só pode ser entregue quando isso for "
-                        "pedido explicitamente."
-                    )
-        elif resolver_atividade:
-            acoes = validar_plano_atividade(
-                acoes,
-                permitir_entrega=entrega_atividade_explicita
-            )
 
         with bloqueio_contexto_tela:
             if contexto_tela is contexto:
