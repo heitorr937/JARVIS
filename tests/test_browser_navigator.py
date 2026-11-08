@@ -128,14 +128,14 @@ class TestNavegadorHTTP(unittest.TestCase):
         # Content-Length antes de tentar ler um corpo acima do limite.
         with socket.create_connection((HOST_LOCAL, self.porta), timeout=3) as sock:
             pedido = (
-                "POST /snapshot HTTP/1.1\\r\\n"
-                f"Host: 127.0.0.1:{self.porta}\\r\\n"
-                "Content-Type: application/json\\r\\n"
-                f"Content-Length: {2 * 1024 * 1024 + 1}\\r\\n"
-                "Connection: close\\r\\n\\r\\n"
+                "POST /snapshot HTTP/1.1\r\n"
+                f"Host: 127.0.0.1:{self.porta}\r\n"
+                "Content-Type: application/json\r\n"
+                f"Content-Length: {2 * 1024 * 1024 + 1}\r\n"
+                "Connection: close\r\n\r\n"
             )
             sock.sendall(pedido.encode("ascii"))
-            resposta = sock.recv(4096).split(b"\\r\\n", 1)[0]
+            resposta = sock.recv(4096).split(b"\r\n", 1)[0]
         status = int(resposta.split()[1])
         self.assertEqual(status, 413)
 
