@@ -12,6 +12,7 @@ from browser_navigator import ErroNavegadorJARVIS, NavegadorJARVIS
 
 
 EXTENSION_ID = "jarvis-test-extension"
+HOST_LOCAL = "127.0.0.1"
 
 
 def porta_livre():
@@ -123,12 +124,19 @@ class TestNavegadorHTTP(unittest.TestCase):
         self.assertEqual(status, 400)
 
     def test_limite_de_corpo_retorna_413(self):
-        corpo = b"x" * (2 * 1024 * 1024 + 1)
-        status, _, _ = self.requisitar(
-            "/snapshot",
-            metodo="POST",
-            dados=corpo
-        )
+        # Envia apenas os cabeçalhos: o servidor deve rejeitar pelo
+        # Content-Length antes de tentar ler um corpo acima do limite.
+        with socket.create_connection((HOST_LOCAL, self.porta), timeout=3) as sock:
+            pedido = (
+                "POST /snapshot HTTP/1.1\\r\\n"
+                f"Host: 127.0.0.1:{self.porta}\\r\\n"
+                "Content-Type: application/json\\r\\n"
+                f"Content-Length: {2 * 1024 * 1024 + 1}\\r\\n"
+                "Connection: close\\r\\n\\r\\n"
+            )
+            sock.sendall(pedido.encode("ascii"))
+            resposta = sock.recv(4096).split(b"\\r\\n", 1)[0]
+        status = int(resposta.split()[1])
         self.assertEqual(status, 413)
 
     def test_rota_desconhecida_retorna_404(self):
