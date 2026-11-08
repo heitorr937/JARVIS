@@ -1,6 +1,10 @@
 import unittest
 
-from action_safety import acao_pode_submeter, bloquear_entrega_atividade
+from action_safety import (
+    acao_pode_submeter,
+    bloquear_entrega_atividade,
+    validar_acoes_por_tipo_questao
+)
 
 
 class TestActionSafety(unittest.TestCase):
@@ -67,6 +71,42 @@ class TestActionSafety(unittest.TestCase):
             }
         ]
         bloquear_entrega_atividade(acoes)
+
+    def test_multipla_escolha_so_permite_alternativa(self):
+        validar_acoes_por_tipo_questao(
+            [{"type": "click", "description": "Selecionar", "target_label": "A) Resposta correta"}],
+            "multiple_choice"
+        )
+        with self.assertRaisesRegex(ValueError, "só posso clicar em uma alternativa"):
+            validar_acoes_por_tipo_questao(
+                [{"type": "click", "description": "Avançar", "target_label": "Continuar"}],
+                "multiple_choice"
+            )
+
+    def test_discursiva_so_permite_campo_e_texto(self):
+        validar_acoes_por_tipo_questao(
+            [
+                {"type": "click", "description": "Campo de resposta", "target_label": "Resposta"},
+                {"type": "type", "description": "Preencher resposta", "text": "Explicação"}
+            ],
+            "written"
+        )
+        with self.assertRaisesRegex(ValueError, "campo de resposta identificado"):
+            validar_acoes_por_tipo_questao(
+                [{"type": "click", "description": "Avançar", "target_label": "Continuar"}],
+                "written"
+            )
+
+    def test_tipo_desconhecido_nao_permite_cliques(self):
+        validar_acoes_por_tipo_questao(
+            [{"type": "scroll", "description": "Rolar"}],
+            "unknown"
+        )
+        with self.assertRaisesRegex(ValueError, "sem identificar o tipo"):
+            validar_acoes_por_tipo_questao(
+                [{"type": "click", "description": "Avançar", "target_label": "Continuar"}],
+                "unknown"
+            )
 
     def test_nao_confunde_texto_de_digitar_com_envio(self):
         acao = {
