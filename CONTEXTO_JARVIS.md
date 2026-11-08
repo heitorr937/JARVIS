@@ -164,6 +164,8 @@ A branch de estabilização adiciona `diagnostico_jarvis.py` para investigar pro
 - Rotas inexistentes.
 - Snapshot e estado da extensão.
 - Correlação entre comando e resultado.
+- Roteamento de comandos para a aba correta.
+- Descarte de comandos expirados.
 - Cancelamento de comando após timeout.
 
 A CI verifica Python 3.11 e 3.12, compila os arquivos Python e verifica a sintaxe dos scripts JS com Node 20. Durante a primeira execução, foram encontrados NUL bytes em `main_github.py` e `main_local.py`: as duas cópias históricas estavam salvas em UTF-16. Nesta branch foram convertidas para UTF-8 sem alterar o texto. A suíte também testa `action_safety.py` para garantir que botões de envio/finalização e Enter sejam bloqueados no fluxo visual de atividades. A existência do workflow no repositório não significa que ele já executou: verificar os resultados de Actions antes de declarar os testes aprovados.
