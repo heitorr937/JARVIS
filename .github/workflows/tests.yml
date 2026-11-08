@@ -1,0 +1,53 @@
+name: Testes do JARVIS
+
+on:
+  push:
+    branches:
+      - main
+      - "feature/**"
+      - "fix/**"
+      - "work/**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  python-tests:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Executar testes automatizados
+        run: python -m unittest discover -s tests -v
+
+  extension-syntax:
+    name: Validar JavaScript da extensão
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Verificar sintaxe dos scripts
+        run: |
+          node --check jarvis_chrome_extension/background.js
+          node --check jarvis_chrome_extension/content.js
+          node --check jarvis_chrome_extension/popup.js
+
+      - name: Validar manifest.json
+        run: python -m json.tool jarvis_chrome_extension/manifest.json > /dev/null
