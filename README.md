@@ -33,6 +33,18 @@ O script cria o atalho `JARVIS.lnk` na área de trabalho. Para fixá-lo na barra
 
 Carregue a pasta `jarvis_chrome_extension` em `chrome://extensions` usando **Modo do desenvolvedor** e **Carregar sem compactação**. Revise a permissão de acesso aos sites antes de habilitar o uso global.
 
+## Diagnosticar o ambiente local
+
+Na raiz do projeto, execute:
+
+```powershell
+python diagnostico_jarvis.py
+```
+
+O diagnóstico verifica a versão do Python, dependências instaladas, presença das configurações necessárias sem exibir seus valores, manifest da extensão e resposta do serviço local em `127.0.0.1:8765/health`.
+
+Para verificar a ponte, o JARVIS precisa estar aberto. Se aparecer que a porta 8765 recusou a conexão, inicie o aplicativo e confira se a inicialização da ponte terminou sem erro. O diagnóstico não chama a API Groq, não lê páginas, não envia dados à internet e não substitui o teste da extensão em uma aba real do Chrome.
+
 ## Autorizar a extensão na ponte local
 
 1. Carregue a extensão em `chrome://extensions` com o modo do desenvolvedor.
