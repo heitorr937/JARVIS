@@ -175,6 +175,40 @@ class TestNavegadorHTTP(unittest.TestCase):
         self.assertTrue(estado["ativo"])
         self.assertEqual(estado["aba"]["titulo"], "Teste")
 
+    def test_next_respeita_a_aba_destino(self):
+        with self.navegador._lock:
+            self.navegador._comandos = [
+                {"id": "aba-1", "_aba_id": 1, "_expira_em": time.time() + 10},
+                {"id": "aba-2", "_aba_id": 2, "_expira_em": time.time() + 10}
+            ]
+
+        status, _, corpo = self.requisitar("/next?tab_id=2")
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(corpo)["comando"]["id"], "aba-2")
+
+        with self.navegador._lock:
+            self.assertEqual(
+                [item["id"] for item in self.navegador._comandos],
+                ["aba-1"]
+            )
+
+        status, _, corpo = self.requisitar("/next?tab_id=1")
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(corpo)["comando"]["id"], "aba-1")
+
+    def test_next_descarta_comandos_expirados(self):
+        with self.navegador._lock:
+            self.navegador._comandos = [
+                {"id": "vencido", "_aba_id": 3, "_expira_em": time.time() - 1}
+            ]
+
+        status, _, corpo = self.requisitar("/next?tab_id=3")
+        self.assertEqual(status, 200)
+        self.assertIsNone(json.loads(corpo)["comando"])
+
+        with self.navegador._lock:
+            self.assertEqual(self.navegador._comandos, [])
+
     def test_comando_e_resultado_correlacionados(self):
         with self.navegador._lock:
             self.navegador._snapshot = {"_jarvis_tab_id": 42}
