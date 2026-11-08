@@ -36,14 +36,14 @@ def acao_pode_submeter(acao: Mapping[str, Any]) -> bool:
 
 
 _ALTERNATIVA = re.compile(
-    r"\b(alternativa|opção|opcao|marcar|selecionar|option|choice)\\b",
+    r"\b(alternativa|opção|opcao|marcar|selecionar|option|choice)\b",
     re.IGNORECASE
 )
 _LETRA_ALTERNATIVA = re.compile(r"^[A-E](?:[).:\s]|$)", re.IGNORECASE)
 _CAMPO_RESPOSTA = re.compile(
     r"\b(campo|caixa|editor|textarea|text input|campo de texto|"
     r"resposta escrita|área de resposta|area de resposta|"
-    r"área de texto|area de texto)\\b",
+    r"área de texto|area de texto)\b",
     re.IGNORECASE
 )
 
