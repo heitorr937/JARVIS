@@ -27,7 +27,10 @@ import pygetwindow as gw
 from browser_navigator import NavegadorJARVIS, ErroNavegadorJARVIS
 from activity_parser import extrair_estrutura_atividade, formatar_estrutura_para_ia
 from activity_tutor import gerar_orientacao_atividade
-from action_safety import bloquear_entrega_atividade
+from action_safety import (
+    bloquear_entrega_atividade,
+    validar_acoes_por_tipo_questao as validar_acoes_seguras_da_questao
+)
 
 
 # ==========================================
@@ -1431,34 +1434,7 @@ def validar_plano_atividade(acoes, permitir_entrega=False):
 
 
 def validar_acoes_por_tipo_questao(acoes, tipo_questao):
-
-    campo_resposta = re.compile(
-        r"\b(campo|caixa|editor|textarea|text input|"
-        r"campo de texto|resposta escrita)\b",
-        re.IGNORECASE
-    )
-    campo_clicado = any(
-        acao["type"] == "click"
-        and campo_resposta.search(
-            acao["description"] + " " + acao.get("target_label", "")
-        )
-        for acao in acoes
-    )
-    texto_digitado = any(
-        acao["type"] == "type"
-        for acao in acoes
-    )
-    if (
-        texto_digitado
-        and tipo_questao in ("multiple_choice", "unknown", None)
-        or campo_clicado
-        and tipo_questao in ("multiple_choice", "unknown", None)
-    ):
-        raise ValueError(
-            "Só vou preencher texto quando a questão for identificada "
-            "como dissertativa; em múltipla escolha, devo clicar na "
-            "alternativa."
-        )
+    validar_acoes_seguras_da_questao(acoes, tipo_questao)
 
 
 def analisar_tela(
