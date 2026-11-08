@@ -152,7 +152,7 @@ Na pasta do projeto, executar:
 python -m unittest discover -s tests -v
 ```
 
-A branch de estabilização adiciona testes para:
+A branch de estabilização adiciona `diagnostico_jarvis.py` para investigar problemas locais e testes para:
 - Health check.
 - Rejeição de Origin/Host não autorizados.
 - Preflight CORS.
