@@ -56,7 +56,7 @@ Branch de trabalho criada durante a estabilização: `work/estabilizacao-navegac
 - `.github/workflows/tests.yml`: CI para testes Python 3.11/3.12 e sintaxe JavaScript.
 - `diagnostico_jarvis.py`: diagnóstico local sem exibir segredos, incluindo dependências, configuração, manifest e conexão com `127.0.0.1:8765`.
 - `CONTEXTO_JARVIS.md`: este documento de continuidade.
-- `action_safety.py`: bloqueio fail-closed de ações de entrega/submissão em atividades.
+- `action_safety.py`: bloqueio fail-closed de ações de entrega/submissão e validação de cliques conforme o tipo da questão (alternativa identificada ou campo de resposta).
 - `tests/test_action_safety.py`: testes das regras de bloqueio.
 
 Não fazer merge automático em `main`. Preferir revisão por pull request contra `fix/timeout-navegacao` e só depois planejar integração com `main`.
