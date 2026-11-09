@@ -50,14 +50,19 @@ class TestActionSafety(unittest.TestCase):
             "description": "Selecionar alternativa",
             "target_label": "A) Regular a temperatura",
         }
-        resposta = {
-            "type": "type",
-            "description": "Preencher campo de resposta",
+        clique_resposta = {
+            "type": "click",
+            "description": "Clicar no campo de resposta",
             "target_label": "Resposta",
         }
+        digitar = {
+            "type": "type",
+            "description": "Preencher resposta",
+            "text": "Explicação",
+        }
         validar_acoes_por_tipo_questao([alternativa], "multiple_choice")
-        validar_acoes_por_tipo_questao([resposta], "written")
-        bloquear_entrega_atividade([alternativa, resposta])
+        validar_acoes_por_tipo_questao([clique_resposta, digitar], "written")
+        bloquear_entrega_atividade([alternativa, clique_resposta, digitar])
 
     def test_permite_navegacao_sem_submissao(self):
         bloquear_entrega_atividade(
@@ -82,16 +87,19 @@ class TestActionSafety(unittest.TestCase):
                 "written",
             )
 
-    def test_discursiva_exige_rotulo_de_campo_para_digitar(self):
-        validar_acoes_por_tipo_questao(
-            [{"type": "type", "description": "Preencher", "target_label": "Resposta"}],
-            "written",
-        )
-        with self.assertRaisesRegex(ValueError, "campo de resposta"):
+    def test_discursiva_exige_campo_identificado_antes_de_digitar(self):
+        with self.assertRaisesRegex(ValueError, "identificar um campo de resposta"):
             validar_acoes_por_tipo_questao(
-                [{"type": "type", "description": "Preencher resposta", "target_label": "E-mail"}],
+                [{"type": "type", "description": "Preencher resposta", "text": "Texto"}],
                 "written",
             )
+        validar_acoes_por_tipo_questao(
+            [
+                {"type": "click", "target_label": "Resposta"},
+                {"type": "type", "text": "Texto"},
+            ],
+            "written",
+        )
 
     def test_discursiva_exige_campo_identificado_para_clicar(self):
         validar_acoes_por_tipo_questao(
