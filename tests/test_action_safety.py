@@ -119,7 +119,7 @@ class TestActionSafety(unittest.TestCase):
             )
 
     def test_rotulo_generico_campo_nao_autoriza_digitar(self):
-        with self.assertRaisesRegex(ValueError, "identificar um campo de resposta"):
+        with self.assertRaisesRegex(ValueError, "campo de resposta identificado"):
             validar_acoes_por_tipo_questao(
                 [
                     {"type": "click", "target_label": "Campo"},
