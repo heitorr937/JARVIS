@@ -45,22 +45,19 @@ class TestActionSafety(unittest.TestCase):
             bloquear_entrega_atividade([acao])
 
     def test_permite_alternativa_e_preenchimento_identificados(self):
-        acoes = [
-            {
-                "type": "click",
-                "description": "Selecionar alternativa",
-                "target_label": "A) Regular a temperatura",
-            },
-            {
-                "type": "type",
-                "description": "Preencher campo de resposta",
-                "target_label": "Resposta",
-            },
-        ]
-        validar_acoes_por_tipo_questao(acoes, "multiple_choice") if False else None
-        validar_acoes_por_tipo_questao([acoes[0]], "multiple_choice")
-        validar_acoes_por_tipo_questao([acoes[1]], "written")
-        bloquear_entrega_atividade(acoes)
+        alternativa = {
+            "type": "click",
+            "description": "Selecionar alternativa",
+            "target_label": "A) Regular a temperatura",
+        }
+        resposta = {
+            "type": "type",
+            "description": "Preencher campo de resposta",
+            "target_label": "Resposta",
+        }
+        validar_acoes_por_tipo_questao([alternativa], "multiple_choice")
+        validar_acoes_por_tipo_questao([resposta], "written")
+        bloquear_entrega_atividade([alternativa, resposta])
 
     def test_permite_navegacao_sem_submissao(self):
         bloquear_entrega_atividade(
