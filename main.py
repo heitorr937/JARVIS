@@ -2120,7 +2120,7 @@ def preparar_e_analisar_controle_computador(
                 and acoes_executadas
                 and acoes_executadas[-1].get("type") == "click"
                 and re.search(
-                    r"\\b(resposta|answer|campo|caixa|editor|textarea|text input)\\b",
+                    r"\b(resposta|answer|campo|caixa|editor|textarea|text input)\b",
                     str(acoes_executadas[-1].get("target_label", "")),
                     re.IGNORECASE
                 )
