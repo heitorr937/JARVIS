@@ -14,9 +14,9 @@ _ACAO_DE_ENTREGA = re.compile(
     re.IGNORECASE,
 )
 
-# O rótulo precisa vir do controle real capturado no DOM. A descrição da
-# ação é texto produzido pelo modelo e, sozinha, não prova qual elemento
-# será manipulado.
+# Em planos visuais, target_label é exigido nos cliques e representa o alvo
+# que o modelo identificou na captura. A descrição é texto do modelo e não
+# deve, sozinha, autorizar a interação com um controle.
 _ALTERNATIVA = re.compile(
     r"\b(alternativa|opção|opcao|option|choice)\b",
     re.IGNORECASE,
@@ -55,10 +55,20 @@ def validar_acoes_por_tipo_questao(
     tipo_questao: str | None,
 ) -> None:
     """Permite somente interações coerentes com o tipo de questão identificado."""
-    for acao in acoes or ():
+    plano = list(acoes or ())
+    for acao in plano:
         if not isinstance(acao, Mapping):
             raise ValueError("A ação da atividade é inválida.")
 
+    # O fluxo visual representa a digitação como uma ação separada, depois
+    # de clicar no campo. Exigimos que o mesmo plano identifique esse campo.
+    existe_campo_resposta = any(
+        str(acao.get("type", "")).strip().lower() == "click"
+        and _CAMPO_RESPOSTA.search(str(acao.get("target_label", "")).strip())
+        for acao in plano
+    )
+
+    for acao in plano:
         tipo_acao = str(acao.get("type", "")).strip().lower()
         rotulo = str(acao.get("target_label", "")).strip()
 
@@ -75,9 +85,9 @@ def validar_acoes_por_tipo_questao(
                 raise ValueError(
                     "Só posso preencher texto quando a questão for identificada como discursiva."
                 )
-            if not _CAMPO_RESPOSTA.search(rotulo):
+            if not existe_campo_resposta:
                 raise ValueError(
-                    "Só posso digitar em um controle identificado como campo de resposta."
+                    "Só posso digitar depois de identificar um campo de resposta no plano."
                 )
             continue
 
