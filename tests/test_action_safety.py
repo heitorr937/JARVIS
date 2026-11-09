@@ -118,6 +118,16 @@ class TestActionSafety(unittest.TestCase):
                 "written",
             )
 
+    def test_rotulo_generico_campo_nao_autoriza_digitar(self):
+        with self.assertRaisesRegex(ValueError, "identificar um campo de resposta"):
+            validar_acoes_por_tipo_questao(
+                [
+                    {"type": "click", "target_label": "Campo"},
+                    {"type": "type", "text": "Texto"},
+                ],
+                "written",
+            )
+
     def test_bloqueia_teclas_durante_atividade(self):
         for tecla in ("enter", "tab", "space", "arrowdown"):
             with self.subTest(tecla=tecla):
