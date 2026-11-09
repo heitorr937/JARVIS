@@ -3,15 +3,30 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable, Mapping, Any
+from typing import Any, Iterable, Mapping
 
 
 _ACAO_DE_ENTREGA = re.compile(
-    r"\b(entregar|entrega|enviar|envie|envia|mandar|manda|"
+    r"\\b(entregar|entrega|enviar|envie|envia|mandar|manda|"
     r"finalizar|finalize|finaliza|concluir|conclua|submeter|submeta|"
     r"submit|send|finish|complete|confirmar|confirme|comprar|pagar|"
-    r"excluir|apagar|deletar)\b",
-    re.IGNORECASE
+    r"excluir|apagar|deletar)\\b",
+    re.IGNORECASE,
+)
+
+# O rótulo precisa vir do controle real capturado no DOM. A descrição da
+# ação é texto produzido pelo modelo e, sozinha, não prova qual elemento
+# será manipulado.
+_ALTERNATIVA = re.compile(
+    r"\\b(alternativa|opção|opcao|option|choice)\\b",
+    re.IGNORECASE,
+)
+_LETRA_ALTERNATIVA = re.compile(r"^[A-E](?:[).:\\s]|$)", re.IGNORECASE)
+_CAMPO_RESPOSTA = re.compile(
+    r"\\b(resposta|answer|campo|caixa|editor|textarea|text input|"
+    r"campo de texto|área de resposta|area de resposta|"
+    r"área de texto|area de texto)\\b",
+    re.IGNORECASE,
 )
 
 
@@ -35,22 +50,9 @@ def acao_pode_submeter(acao: Mapping[str, Any]) -> bool:
     return bool(_ACAO_DE_ENTREGA.search(descricao + " " + rotulo))
 
 
-_ALTERNATIVA = re.compile(
-    r"\b(alternativa|opção|opcao|marcar|selecionar|option|choice)\b",
-    re.IGNORECASE
-)
-_LETRA_ALTERNATIVA = re.compile(r"^[A-E](?:[).:\s]|$)", re.IGNORECASE)
-_CAMPO_RESPOSTA = re.compile(
-    r"\b(campo|caixa|editor|textarea|text input|campo de texto|"
-    r"resposta escrita|área de resposta|area de resposta|"
-    r"área de texto|area de texto)\b",
-    re.IGNORECASE
-)
-
-
 def validar_acoes_por_tipo_questao(
     acoes: Iterable[Mapping[str, Any]],
-    tipo_questao: str | None
+    tipo_questao: str | None,
 ) -> None:
     """Permite somente interações coerentes com o tipo de questão identificado."""
     for acao in acoes or ():
@@ -58,30 +60,32 @@ def validar_acoes_por_tipo_questao(
             raise ValueError("A ação da atividade é inválida.")
 
         tipo_acao = str(acao.get("type", "")).strip().lower()
-        descricao = str(acao.get("description", ""))
-        rotulo = str(acao.get("target_label", ""))
-        alvo = descricao + " " + rotulo
+        rotulo = str(acao.get("target_label", "")).strip()
 
         if tipo_acao == "scroll":
             continue
 
+        # Durante atividades, teclas podem selecionar opções, avançar etapas
+        # ou acionar formulários. A navegação deve usar controles DOM validados.
         if tipo_acao == "press":
-            if str(acao.get("key", "")).strip().lower() in {"enter", "return"}:
-                raise ValueError("Enter está bloqueado durante atividades.")
-            continue
+            raise ValueError("Ações de teclado estão bloqueadas durante atividades.")
 
         if tipo_acao == "type":
             if tipo_questao != "written":
                 raise ValueError(
                     "Só posso preencher texto quando a questão for identificada como discursiva."
                 )
+            if not _CAMPO_RESPOSTA.search(rotulo):
+                raise ValueError(
+                    "Só posso digitar em um controle identificado como campo de resposta."
+                )
             continue
 
         if tipo_acao == "click":
             if tipo_questao == "multiple_choice":
                 if not (
-                    _ALTERNATIVA.search(alvo)
-                    or _LETRA_ALTERNATIVA.match(rotulo.strip())
+                    _ALTERNATIVA.search(rotulo)
+                    or _LETRA_ALTERNATIVA.match(rotulo)
                 ):
                     raise ValueError(
                         "Em múltipla escolha, só posso clicar em uma alternativa identificada."
@@ -89,7 +93,7 @@ def validar_acoes_por_tipo_questao(
                 continue
 
             if tipo_questao == "written":
-                if not _CAMPO_RESPOSTA.search(alvo):
+                if not _CAMPO_RESPOSTA.search(rotulo):
                     raise ValueError(
                         "Em questão discursiva, só posso clicar no campo de resposta identificado."
                     )
@@ -116,3 +120,4 @@ def bloquear_entrega_atividade(acoes: Iterable[Mapping[str, Any]]) -> None:
                 "O JARVIS pode preencher ou marcar respostas, mas não pode "
                 "enviar, finalizar ou submeter a atividade nesta versão."
             )
+    
