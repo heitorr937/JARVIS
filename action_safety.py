@@ -53,6 +53,7 @@ def acao_pode_submeter(acao: Mapping[str, Any]) -> bool:
 def validar_acoes_por_tipo_questao(
     acoes: Iterable[Mapping[str, Any]],
     tipo_questao: str | None,
+    campo_resposta_previamente_focado: bool = False,
 ) -> None:
     """Permite somente interações coerentes com o tipo de questão identificado."""
     plano = list(acoes or ())
@@ -85,7 +86,7 @@ def validar_acoes_por_tipo_questao(
                 raise ValueError(
                     "Só posso preencher texto quando a questão for identificada como discursiva."
                 )
-            if not existe_campo_resposta:
+            if not (existe_campo_resposta or campo_resposta_previamente_focado):
                 raise ValueError(
                     "Só posso digitar depois de identificar um campo de resposta no plano."
                 )
