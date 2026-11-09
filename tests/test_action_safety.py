@@ -100,6 +100,12 @@ class TestActionSafety(unittest.TestCase):
             ],
             "written",
         )
+        # No controle iterativo, o clique de foco ocorreu no passo anterior.
+        validar_acoes_por_tipo_questao(
+            [{"type": "type", "text": "Texto"}],
+            "written",
+            campo_resposta_previamente_focado=True,
+        )
 
     def test_discursiva_exige_campo_identificado_para_clicar(self):
         validar_acoes_por_tipo_questao(
