@@ -23,8 +23,8 @@ _ALTERNATIVA = re.compile(
 )
 _LETRA_ALTERNATIVA = re.compile(r"^[A-E](?:[).:\s]|$)", re.IGNORECASE)
 _CAMPO_RESPOSTA = re.compile(
-    r"\b(resposta|answer|campo|caixa|editor|textarea|text input|"
-    r"campo de texto|área de resposta|area de resposta|"
+    r"\b(resposta|answer|editor|textarea|text input|campo de texto|"
+    r"caixa de texto|área de resposta|area de resposta|"
     r"área de texto|area de texto)\b",
     re.IGNORECASE,
 )
