@@ -1433,8 +1433,16 @@ def validar_plano_atividade(acoes, permitir_entrega=False):
     )
 
 
-def validar_acoes_por_tipo_questao(acoes, tipo_questao):
-    validar_acoes_seguras_da_questao(acoes, tipo_questao)
+def validar_acoes_por_tipo_questao(
+    acoes,
+    tipo_questao,
+    campo_resposta_previamente_focado=False
+):
+    validar_acoes_seguras_da_questao(
+        acoes,
+        tipo_questao,
+        campo_resposta_previamente_focado=campo_resposta_previamente_focado
+    )
 
 
 def analisar_tela(
@@ -1443,7 +1451,8 @@ def analisar_tela(
     resolver_atividade=False,
     abrir_geekie=False,
     controle_iterativo=False,
-    retornar_resultado=False
+    retornar_resultado=False,
+    campo_resposta_previamente_focado=False
 ):
 
     global contexto_tela
@@ -1924,7 +1933,11 @@ def analisar_tela(
             acoes = acoes[:1]
 
         if resolver_atividade:
-            validar_acoes_por_tipo_questao(acoes, tipo_questao)
+            validar_acoes_por_tipo_questao(
+                acoes,
+                tipo_questao,
+                campo_resposta_previamente_focado=campo_resposta_previamente_focado
+            )
 
         if resolver_atividade:
             bloquear_entrega_atividade(acoes)
@@ -2102,13 +2115,25 @@ def preparar_e_analisar_controle_computador(
                     + ". Continue do estado atual, sem repetir essas etapas."
                 )
 
+            campo_resposta_previamente_focado = bool(
+                resolver_atividade
+                and acoes_executadas
+                and acoes_executadas[-1].get("type") == "click"
+                and re.search(
+                    r"\\b(resposta|answer|campo|caixa|editor|textarea|text input)\\b",
+                    str(acoes_executadas[-1].get("target_label", "")),
+                    re.IGNORECASE
+                )
+            )
+
             resposta_usuario, acoes, _ = analisar_tela(
                 pedido_com_progresso,
                 True,
                 resolver_atividade,
                 abrir_geekie,
                 controle_iterativo=True,
-                retornar_resultado=True
+                retornar_resultado=True,
+                campo_resposta_previamente_focado=campo_resposta_previamente_focado
             )
 
             if not acoes:
