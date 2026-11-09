@@ -7,10 +7,10 @@ from typing import Any, Iterable, Mapping
 
 
 _ACAO_DE_ENTREGA = re.compile(
-    r"\\b(entregar|entrega|enviar|envie|envia|mandar|manda|"
+    r"\b(entregar|entrega|enviar|envie|envia|mandar|manda|"
     r"finalizar|finalize|finaliza|concluir|conclua|submeter|submeta|"
     r"submit|send|finish|complete|confirmar|confirme|comprar|pagar|"
-    r"excluir|apagar|deletar)\\b",
+    r"excluir|apagar|deletar)\b",
     re.IGNORECASE,
 )
 
@@ -18,14 +18,14 @@ _ACAO_DE_ENTREGA = re.compile(
 # ação é texto produzido pelo modelo e, sozinha, não prova qual elemento
 # será manipulado.
 _ALTERNATIVA = re.compile(
-    r"\\b(alternativa|opção|opcao|option|choice)\\b",
+    r"\b(alternativa|opção|opcao|option|choice)\b",
     re.IGNORECASE,
 )
-_LETRA_ALTERNATIVA = re.compile(r"^[A-E](?:[).:\\s]|$)", re.IGNORECASE)
+_LETRA_ALTERNATIVA = re.compile(r"^[A-E](?:[).:\s]|$)", re.IGNORECASE)
 _CAMPO_RESPOSTA = re.compile(
-    r"\\b(resposta|answer|campo|caixa|editor|textarea|text input|"
+    r"\b(resposta|answer|campo|caixa|editor|textarea|text input|"
     r"campo de texto|área de resposta|area de resposta|"
-    r"área de texto|area de texto)\\b",
+    r"área de texto|area de texto)\b",
     re.IGNORECASE,
 )
 
@@ -120,4 +120,3 @@ def bloquear_entrega_atividade(acoes: Iterable[Mapping[str, Any]]) -> None:
                 "O JARVIS pode preencher ou marcar respostas, mas não pode "
                 "enviar, finalizar ou submeter a atividade nesta versão."
             )
-    
